@@ -1,0 +1,120 @@
+:root {
+  --bg-main: #123c3d;
+  --bg-content: #184849;
+  --nav-bg: #e9d1bc;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+.topbar {
+  height: 56px;
+  background: #206466;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0 8px;
+  justify-content: space-between;
+}
+
+.icon-btn {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #1f2730;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.icon-btn:first-child {
+  margin-right: 4px;
+}
+
+.icon-btn:last-child {
+  margin-left: 4px;
+}
+
+.search-pill {
+  flex: 1;
+  height: 34px;
+  background: #efdfd0;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+.search-mark {
+  color: #3b4b57;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.search-pill input {
+  flex: 1;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  color: #1f2730;
+}
+
+.search-pill input::placeholder {
+  color: #6a7077;
+}
+
+.hero {
+  padding: 8px 12px 0;
+  text-align: center;
+}
+
+.hero-title {
+  font-size: 34px;
+  line-height: 1;
+  color: #bffcff;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.category-grid {
+  padding: 12px 12px 12px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.category-card {
+  background: #bffcff;
+  border-radius: 14px;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.category-card:hover {
+  transform: scale(1.02);
+}
+
+.card-inner {
+  width: 78%;
+  height: 46%;
+  background: #6db3b1;
+  border-radius: 10px;
+}

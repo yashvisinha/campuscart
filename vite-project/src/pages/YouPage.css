@@ -1,0 +1,151 @@
+.you-shell {
+  width: min(100%, 430px);
+  min-height: 100dvh;
+  margin: 0 auto;
+  background: var(--bg-main);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.you-content {
+  flex: 1;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--bg-content);
+  padding: 0;
+}
+
+.you-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  position: sticky;
+  top: 0;
+  background: var(--bg-page);
+  z-index: 1;
+}
+
+.you-search-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #efdfd0;
+  border-radius: 999px;
+  padding: 10px 14px;
+}
+
+.you-search-icon {
+  font-size: 14px;
+  color: #3b4b57;
+}
+
+.you-search-pill input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #0f2a2b;
+  font-size: 14px;
+}
+
+.you-top-icon {
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 14px;
+  background: #184849;
+  color: #f5f2ea;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.you-page-title {
+  font-size: 32px;
+  line-height: 1.1;
+  color: #bffcff;
+  margin: 18px 16px 14px;
+  font-weight: 700;
+}
+
+.you-section {
+  margin-bottom: 24px;
+}
+
+.you-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.you-section-header h2 {
+  font-size: 20px;
+  color: #bffcff;
+  margin: 0;
+}
+
+.you-section-subtitle {
+  color: #d7f8f7;
+  font-size: 14px;
+}
+
+.you-cards-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.you-card {
+  min-height: 94px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: var(--bg-card);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  cursor: pointer;
+}
+
+.you-body {
+  padding: 0 16px 20px;
+}
+
+.you-card:hover {
+  transform: translateY(-1px);
+}
+
+.you-bottom-nav {
+  height: 64px;
+  background: var(--nav-bg);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 10px;
+  flex-shrink: 0;
+}
+
+.nav-icon {
+  width: 46px;
+  height: 46px;
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  color: #111;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.nav-icon.active {
+  background: #bffcff;
+  color: #0f2a2b;
+}
+
+.you-body {
+  padding-bottom: 20px;
+}
