@@ -1,32 +1,21 @@
-import { useNavigate } from "react-router-dom";
-import {
-  Settings as SettingsIcon,
-  Bell as BellIcon,
-} from "lucide-react";
-import "./Category.css";
+import { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Settings as SettingsIcon, Bell as BellIcon, ArrowLeft } from "lucide-react";
+import "./category.css";
 
-const items = Array.from({ length: 6 }).map((_, i) => ({
-  id: i + 1,
-  title: `Item ${i + 1}`,
-}));
-
-// Header component
 function Header() {
   const navigate = useNavigate();
-
   return (
     <header className="topbar">
       <button className="icon-btn" aria-label="settings" onClick={() => navigate('/settings')}>
-        <SettingsIcon size={28} />
+        <SettingsIcon size={24} />
       </button>
-
       <div className="search-pill">
         <span className="search-mark">⌕</span>
         <input type="text" placeholder="Search" aria-label="Search" />
       </div>
-
       <button className="icon-btn" aria-label="notifications">
-        <BellIcon size={28} />
+        <BellIcon size={24} />
       </button>
     </header>
   );
@@ -34,29 +23,78 @@ function Header() {
 
 export default function Category() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleCardClick = () => {
-    navigate('/product', { state: { from: '/category' } });
+  const category = location.state?.category;
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const url = category
+          ? '/api/products?category_id=' + category.id
+          : '/api/products';
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data && !data.error) setProducts(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [category]);
+
+  const handleCardClick = (productId) => {
+    navigate('/product', { state: { from: '/category', productId } });
   };
 
   return (
     <>
       <Header />
 
-      <section className="hero">
-        <h1 className="hero-title">Category</h1>
-      </section>
+      <div className="cat-header">
+        <button className="cat-back" onClick={() => navigate(-1)} aria-label="Go back">
+          <ArrowLeft size={20} />
+        </button>
+        <h1 className="cat-title">{category ? category.name : 'All Products'}</h1>
+      </div>
 
-      <section className="category-grid" aria-label="Category items">
-        {items.map((it) => (
-          <article 
-            key={it.id} 
-            className="category-card"
-            onClick={handleCardClick}
+      <section className="cat-grid" aria-label="Category items">
+        {loading && (
+          <div className="cat-loading">
+            <div className="cat-spinner" />
+          </div>
+        )}
+
+        {!loading && products.length === 0 && (
+          <div className="cat-empty">No products found in this category.</div>
+        )}
+
+        {products.map((product) => (
+          <article
+            key={product.id}
+            className="cat-card"
+            onClick={() => handleCardClick(product.id)}
             role="button"
             tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && handleCardClick(product.id)}
+            aria-label={`View ${product.name}`}
           >
-            <div className="card-inner" />
+            <div
+              className="cat-card-image"
+              style={{
+                backgroundImage: product.image_url
+                  ? `url(${product.image_url})`
+                  : 'none',
+              }}
+            />
+            <div className="cat-card-info">
+              <span className="cat-card-name">{product.name}</span>
+              <span className="cat-card-price">₹{product.price}</span>
+            </div>
           </article>
         ))}
       </section>

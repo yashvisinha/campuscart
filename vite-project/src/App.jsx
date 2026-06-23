@@ -58,7 +58,7 @@ function App() {
         <Route path="/settings" element={<SettingsPage />} />
         
         {/* Product Page */}
-        <Route path="/product" element={<ProductPage />} />
+        <Route path="/product" element={<PageLayout><ProductPage /></PageLayout>} />
 
         {/* You Page */}
         <Route path="/you" element={<PageLayout><YouPage /></PageLayout>} />

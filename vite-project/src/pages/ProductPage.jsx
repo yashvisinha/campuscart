@@ -1,70 +1,114 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Home, ShoppingCart, Plus, User, MessageCircle } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Heart } from 'lucide-react';
 import './ProductPage.css';
-
-import pfpDefault from '../assets/pfpDefault.png';
 
 const ProductPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const backTo = location.state?.from || '/home';
+  const productId = location.state?.productId;
+
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [wishlisted, setWishlisted] = useState(false);
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      if (!productId) {
+        setLoading(false);
+        return;
+      }
+      try {
+        const res = await fetch('/api/products/' + productId);
+        const data = await res.json();
+        if (data && !data.error) setProduct(data);
+      } catch (err) {
+        console.error(err);
+      }
+      setLoading(false);
+    };
+    fetchProduct();
+  }, [productId]);
+
+  if (loading) {
+    return (
+      <div className="pp-loading">
+        <div className="pp-spinner" />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="pp-page">
+        <div className="pp-topbar">
+          <button className="pp-back" onClick={() => navigate(backTo)}>
+            <ArrowLeft size={22} />
+          </button>
+          <span className="pp-topbar-title">Product</span>
+        </div>
+        <div className="pp-not-found">Product not found.</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="product-container">
-      {/* Top Navigation Bar */}
-      <div className="top-bar">
-        <button className="back-btn" onClick={() => navigate(backTo)}>
-          <ArrowLeft size={24} />
+    <div className="pp-page">
+      {/* Top Bar */}
+      <div className="pp-topbar">
+        <button className="pp-back" onClick={() => navigate(backTo)} aria-label="Go back">
+          <ArrowLeft size={22} />
         </button>
-        <h1 className="product-title">Product Name</h1>
-        <div className="top-icons">
-          <button>ℹ️</button>
-          <button>🔍</button>
-          <button>👤</button>
+        <span className="pp-topbar-title">{product.name}</span>
+        <button
+          className={`pp-heart ${wishlisted ? 'pp-heart--active' : ''}`}
+          onClick={() => setWishlisted(w => !w)}
+          aria-label="Wishlist"
+        >
+          <Heart size={22} fill={wishlisted ? '#ff4757' : 'none'} />
+        </button>
+      </div>
+
+      {/* Scrollable content */}
+      <div className="pp-scroll">
+        {/* Hero Image */}
+        <div className="pp-image-wrap">
+          <img
+            src={product.image_url || 'https://placehold.co/400x300/184849/bffcff?text=No+Image'}
+            alt={product.name}
+            className="pp-image"
+          />
         </div>
-      </div>
 
-      {/* Product Image */}
-      <div className="product-image-container">
-        <div className="product-image">
-          <img src={pfpDefault} alt="Product" />
+        {/* Info Card */}
+        <div className="pp-info-card">
+          <h2 className="pp-name">{product.name}</h2>
+          <div className="pp-price">₹{product.price}</div>
+
+          {product.stock !== undefined && (
+            <div className={`pp-stock ${product.stock > 0 ? 'pp-stock--in' : 'pp-stock--out'}`}>
+              {product.stock > 0 ? `In Stock (${product.stock} left)` : 'Out of Stock'}
+            </div>
+          )}
+
+          <div className="pp-divider" />
+
+          <h3 className="pp-section-title">Description</h3>
+          <p className="pp-description">{product.description || 'No description available.'}</p>
+
+          {/* Action Buttons */}
+          <div className="pp-actions">
+            <button className="pp-btn pp-btn--wishlist" onClick={() => setWishlisted(w => !w)}>
+              <Heart size={18} fill={wishlisted ? '#ff4757' : 'none'} />
+              {wishlisted ? 'Wishlisted' : 'Add to Wishlist'}
+            </button>
+            <button className="pp-btn pp-btn--buy">
+              <ShoppingCart size={18} />
+              Buy Now
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* Price */}
-      <div className="price">₹199.20</div>
-
-      {/* Description */}
-      <div className="description">
-        (Product description) Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
-        Curabitur vitae nisi a enim sollicitudin feugiat. Vivamus eu congue sem. 
-        Nullam et ante lorem. Morbi at ullamcorper orci blah blah.
-      </div>
-
-      {/* Action Buttons */}
-      <div className="action-buttons">
-        <button className="buy-now-btn">Buy Now</button>
-        <button className="wishlist-btn">Add to Wishlist</button>
-      </div>
-
-      {/* Bottom Navigation - Clickable Icons */}
-      <div className="bottom-nav">
-        <button onClick={() => navigate('/') }>
-          <Home size={24} />
-        </button>
-        <button onClick={() => alert("Cart clicked")}>
-          <ShoppingCart size={24} />
-        </button>
-        <button onClick={() => alert("Plus clicked") }>
-          <Plus size={28} />
-        </button>
-        <button onClick={() => alert("Chat clicked")}>
-          <MessageCircle size={24} />
-        </button>
-        <button onClick={() => navigate('/you')}>
-          <User size={24} />
-        </button>
       </div>
     </div>
   );

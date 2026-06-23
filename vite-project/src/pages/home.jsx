@@ -6,22 +6,13 @@
 
 // Content area should scroll, top and bottom bars remain visually stable
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Settings as SettingsIcon,
   Bell as BellIcon,
 } from "lucide-react";
 import "./home.css";
-
-//temporary array
-const categories = [
-  "Clothes",
-  "Snacks",
-  "Accessories",
-  "Fresher's items",
-  "College Essentials",
-];
 
 //header component
 function Header() {
@@ -46,9 +37,11 @@ function Header() {
 }
 
 //categories + carousel
-function Categories() {
+function Categories({ categories }) {
   const navigate = useNavigate();
   const [activeIndex, setActiveIndex] = useState(0);
+
+  if (categories.length === 0) return null;
 
   const previousCategory =
     categories[(activeIndex - 1 + categories.length) % categories.length];
@@ -81,19 +74,19 @@ function Categories() {
 
         <div className="card card-left" aria-hidden="true">
           <span className="card-label card-label-small">
-            {previousCategory}
+            {previousCategory?.name}
           </span>
         </div>
         <button 
           className="card card-center"
           type="button"
-          onClick={() => navigate('/category')}
+          onClick={() => navigate('/category', { state: { category: currentCategory } })}
           aria-label="View category"
         >
-          <span className="card-label">{currentCategory}</span>
+          <span className="card-label">{currentCategory?.name}</span>
         </button>
         <div className="card card-right" aria-hidden="true">
-          <span className="card-label card-label-small">{nextCategory}</span>
+          <span className="card-label card-label-small">{nextCategory?.name}</span>
         </div>
 
         <button
@@ -110,7 +103,7 @@ function Categories() {
       <div className="dots">
         {categories.map((category, index) => (
           <span
-            key={category}
+            key={category.id}
             className={index === activeIndex ? "dot dot-active" : "dot"}
             aria-hidden="true"
           />
@@ -120,22 +113,50 @@ function Categories() {
   );
 }
 
-function RandomElements() {
+function RandomElements({ products }) {
   const navigate = useNavigate();
-  const tileCount = 4;
 
-  function renderTiles(count, prefix) {
-    return Array.from({ length: count }, (_, index) => (
+  // If we don't have products yet, we can render empty tiles or a loading state
+  if (!products || products.length === 0) return null;
+
+  const renderTiles = (startIdx, endIdx, prefix) => {
+    return products.slice(startIdx, endIdx).map((product, index) => (
       <button
-        key={`${prefix}-${index}`}
+        key={`${prefix}-${product.id}-${index}`}
         type="button"
         className="tile"
-        style={{ height: "170px" }}
-        onClick={() => navigate("/product", { state: { from: "/home" } })}
-        aria-label="Open product preview"
-      />
+        style={{ 
+          height: "170px",
+          backgroundImage: `url(${product.image_url})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          position: 'relative',
+          overflow: 'hidden'
+        }}
+        onClick={() => navigate("/product", { state: { from: "/home", productId: product.id } })}
+        aria-label={`Open ${product.name}`}
+      >
+        <div style={{
+          position: 'absolute',
+          bottom: 0, left: 0, right: 0,
+          background: 'linear-gradient(transparent, rgba(0,0,0,0.75))',
+          color: 'white',
+          padding: '8px',
+          fontSize: '11px',
+          fontWeight: 600,
+          textAlign: 'left',
+          lineHeight: 1.4
+        }}>
+          {product.name}<br/>
+          <span style={{ color: '#bffcff', fontWeight: 700 }}>₹{product.price}</span>
+        </div>
+      </button>
     ));
-  }
+  };
+
+  // Duplicate for marquee effect
+  const firstHalf = products.slice(0, Math.ceil(products.length / 2));
+  const secondHalf = products.slice(Math.ceil(products.length / 2));
 
   return (
     <section
@@ -144,15 +165,15 @@ function RandomElements() {
     >
       <div className="marquee-column marquee-up">
         <div className="marquee-track">
-          {renderTiles(tileCount, "left")}
-          {renderTiles(tileCount, "left-copy")}
+          {renderTiles(0, firstHalf.length, "left")}
+          {renderTiles(0, firstHalf.length, "left-copy")}
         </div>
       </div>
 
       <div className="marquee-column marquee-down">
         <div className="marquee-track">
-          {renderTiles(tileCount, "right")}
-          {renderTiles(tileCount, "right-copy")}
+          {renderTiles(firstHalf.length, products.length, "right")}
+          {renderTiles(firstHalf.length, products.length, "right-copy")}
         </div>
       </div>
     </section>
@@ -161,11 +182,31 @@ function RandomElements() {
 
 //complete home page
 export default function Home() {
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const catRes = await fetch('/api/categories');
+        const catData = await catRes.json();
+        if (catData && !catData.error) setCategories(catData);
+
+        const prodRes = await fetch('/api/products');
+        const prodData = await prodRes.json();
+        if (prodData && !prodData.error) setProducts(prodData);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+      }
+    };
+    fetchData();
+  }, []);
+
   return (
     <>
       <Header />
-      <Categories />
-      <RandomElements />
+      <Categories categories={categories} />
+      <RandomElements products={products} />
     </>
   );
 }
