@@ -1,0 +1,208 @@
+/* ===== Wishlist Page ===== */
+
+/* Top Bar */
+.wl-topbar {
+  height: 56px;
+  background: #206466;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.wl-back {
+  background: none;
+  border: none;
+  color: #bffcff;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.wl-back:hover { background: rgba(191,252,255,0.15); }
+
+.wl-topbar-title {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+}
+
+.wl-topbar-badge {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wl-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #ff4757;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Content */
+.wl-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+/* Empty State */
+.wl-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  height: 100%;
+  min-height: 280px;
+  color: rgba(191,252,255,0.55);
+  font-size: 16px;
+}
+
+.wl-browse-btn {
+  margin-top: 8px;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, #206466, #2a7e80);
+  color: #bffcff;
+  border: 1.5px solid rgba(191,252,255,0.3);
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, filter 0.2s;
+}
+
+.wl-browse-btn:hover { filter: brightness(1.1); }
+
+/* List */
+.wl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Card */
+.wl-card {
+  background: #1e5557;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  gap: 0;
+  transition: box-shadow 0.2s;
+}
+
+.wl-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+
+.wl-card-image {
+  width: 110px;
+  min-height: 130px;
+  background-color: #0f3233;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.wl-card-image:hover { opacity: 0.85; }
+
+.wl-card-info {
+  flex: 1;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wl-card-text { display: flex; flex-direction: column; gap: 4px; }
+
+.wl-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wl-card-desc {
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.wl-card-price {
+  font-size: 18px;
+  font-weight: 800;
+  color: #bffcff;
+}
+
+.wl-card-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.wl-buy-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  background: linear-gradient(135deg, #ff6b6b, #ff4757);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.2s, transform 0.15s;
+  box-shadow: 0 3px 10px rgba(255,71,87,0.3);
+}
+
+.wl-buy-btn:hover { filter: brightness(1.08); }
+.wl-buy-btn:active { transform: scale(0.96); }
+
+.wl-remove-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,71,87,0.12);
+  color: #ff4757;
+  border: 1px solid rgba(255,71,87,0.25);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.wl-remove-btn:hover { background: rgba(255,71,87,0.25); }

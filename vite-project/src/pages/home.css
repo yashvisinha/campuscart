@@ -22,8 +22,8 @@
 
 .app-content {
   flex: 1;
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   background: var(--bg-content);
 }
@@ -264,12 +264,10 @@
   --tile-gap: 12px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  grid-template-rows: minmax(0, 1fr);
   gap: var(--tile-gap);
   padding: 12px 12px 0;
   flex: 1;
   min-height: 0;
-  align-content: stretch;
   overflow: hidden;
 }
 
