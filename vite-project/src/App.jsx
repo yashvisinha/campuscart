@@ -16,6 +16,8 @@ import HomePage from './pages/home';
 import Messages from './pages/messages';
 import Category from './pages/category';
 import PostPage from './pages/post';
+import Splash from './pages/Splash';
+import Onboarding from './pages/Onboarding';
 
 // Bottom navigation component
 function BottomNav() {
@@ -48,9 +50,15 @@ function App() {
   return (
     <Router>
       <Routes>
-        {/* Default page*/}
-        <Route path="/" element={<PageLayout><HomePage /></PageLayout>} />
-        
+        {/* Default page - Splash screen */}
+        <Route path="/" element={<Splash />} />
+
+        {/* Onboarding Page */}
+        <Route path="/onboarding" element={<Onboarding />} />
+
+        {/* Login Page */}
+        <Route path="/login" element={<LoginPage />} />
+
         {/* Home Page */}
         <Route path="/home" element={<PageLayout><HomePage /></PageLayout>} />
         
@@ -71,9 +79,6 @@ function App() {
 
         {/*post page*/}
         <Route path="/post" element={<PageLayout><PostPage /></PageLayout>} />
-      
-        {/* Login Page */}
-        <Route path="/login" element={<LoginPage />} />      
       
       </Routes>
     </Router>
