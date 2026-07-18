@@ -47,7 +47,7 @@ function SettingsPage() {
     <div className="settings-container">
       {/* Header */}
       <div className="settings-header">
-        <button className="back-btn" onClick={() => navigate('/')}>←</button>
+        <button className="back-btn" onClick={() => navigate('/home')}>←</button>
         <h1>Settings</h1>
       </div>
 
