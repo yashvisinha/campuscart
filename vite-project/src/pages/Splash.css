@@ -1,0 +1,15 @@
+.splash-screen {
+  width: min(100%, 430px);
+  height: 100dvh;
+  margin: 0 auto;
+  background: var(--bg-main);
+  overflow: hidden;
+  position: relative;
+}
+
+.splash-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
