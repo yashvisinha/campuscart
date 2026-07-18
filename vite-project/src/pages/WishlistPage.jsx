@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart, ShoppingCart, Trash2 } from 'lucide-react';
-import { useWishlist } from '../../context/WishlistContext';
+import { useWishlist } from '../context/WishlistContext';
 import './WishlistPage.css';
 
 export default function WishlistPage() {

@@ -18,6 +18,10 @@ import Category from './pages/category';
 import PostPage from './pages/post';
 import Splash from './pages/Splash';
 import Onboarding from './pages/Onboarding';
+import AuthCallback from './pages/AuthCallback';
+import WishlistPage from './pages/WishlistPage';
+import NotificationsPage from './pages/NotificationsPage';
+import { WishlistProvider } from './context/WishlistContext';
 
 // Bottom navigation component
 function BottomNav() {
@@ -26,7 +30,7 @@ function BottomNav() {
   return (
     <nav className="bottom-nav">
       <button className="nav-icon" onClick={() => navigate('/home')} aria-label="Home"><HomeIcon /></button>
-      <button className="nav-icon" onClick={() => { }} aria-label="Cart"><ShoppingCartIcon /></button>
+      <button className="nav-icon" onClick={() => navigate('/wishlist')} aria-label="Wishlist"><ShoppingCartIcon /></button>
       <button className="nav-icon" onClick={() => navigate('/post')} aria-label="Plus"><PlusIcon /></button>
       <button className="nav-icon" onClick={() => navigate('/messages')} aria-label="Messages"><MessageCircleIcon /></button>
       <button className="nav-icon" onClick={() => navigate('/you')} aria-label="Profile"><UserIcon /></button>
@@ -48,40 +52,50 @@ function PageLayout({ children }) {
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Default page - Splash screen */}
-        <Route path="/" element={<Splash />} />
+    <WishlistProvider>
+      <Router>
+        <Routes>
+          {/* Default page - Splash screen */}
+          <Route path="/" element={<Splash />} />
 
-        {/* Onboarding Page */}
-        <Route path="/onboarding" element={<Onboarding />} />
+          {/* Onboarding Page */}
+          <Route path="/onboarding" element={<Onboarding />} />
 
-        {/* Login Page */}
-        <Route path="/login" element={<LoginPage />} />
+          {/* Login Page */}
+          <Route path="/login" element={<LoginPage />} />
+          
+          {/* Auth Callback Page */}
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
-        {/* Home Page */}
-        <Route path="/home" element={<PageLayout><HomePage /></PageLayout>} />
-        
-        {/* Settings Page */}
-        <Route path="/settings" element={<SettingsPage />} />
-        
-        {/* Product Page */}
-        <Route path="/product" element={<PageLayout><ProductPage /></PageLayout>} />
+          {/* Home Page */}
+          <Route path="/home" element={<PageLayout><HomePage /></PageLayout>} />
+          
+          {/* Settings Page */}
+          <Route path="/settings" element={<SettingsPage />} />
+          
+          {/* Product Page */}
+          <Route path="/product" element={<PageLayout><ProductPage /></PageLayout>} />
 
-        {/* You Page */}
-        <Route path="/you" element={<PageLayout><YouPage /></PageLayout>} />
+          {/* You Page */}
+          <Route path="/you" element={<PageLayout><YouPage /></PageLayout>} />
 
-        {/*chat page*/}
-        <Route path="/messages" element={<PageLayout><Messages /></PageLayout>} />
-    
-        {/*category page*/}
-        <Route path="/category" element={<PageLayout><Category /></PageLayout>} />
-
-        {/*post page*/}
-        <Route path="/post" element={<PageLayout><PostPage /></PageLayout>} />
+          {/*chat page*/}
+          <Route path="/messages" element={<PageLayout><Messages /></PageLayout>} />
       
-      </Routes>
-    </Router>
+          {/*category page*/}
+          <Route path="/category" element={<PageLayout><Category /></PageLayout>} />
+
+          {/*post page*/}
+          <Route path="/post" element={<PageLayout><PostPage /></PageLayout>} />
+
+          {/*wishlist page*/}
+          <Route path="/wishlist" element={<PageLayout><WishlistPage /></PageLayout>} />
+
+          {/*notifications page*/}
+          <Route path="/notifications" element={<PageLayout><NotificationsPage /></PageLayout>} />
+        </Routes>
+      </Router>
+    </WishlistProvider>
   );
 }
 
