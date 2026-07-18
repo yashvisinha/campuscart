@@ -49,6 +49,76 @@ app.get('/api/products/:id', async (req, res) => {
   res.json(data);
 });
 
+// POST /api/auth/dauth/callback
+app.post('/api/auth/dauth/callback', async (req, res) => {
+  const { code } = req.body;
+  if (!code) return res.status(400).json({ error: 'No code provided' });
+
+  try {
+    // 1. Exchange code for token
+    const tokenParams = new URLSearchParams({
+      client_id: process.env.DAUTH_CLIENT_ID,
+      client_secret: process.env.DAUTH_CLIENT_SECRET,
+      grant_type: 'authorization_code',
+      redirect_uri: process.env.DAUTH_REDIRECT_URI,
+      code
+    });
+
+    const tokenRes = await fetch('https://auth.delta.nitt.edu/api/oauth/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: tokenParams
+    });
+    
+    if (!tokenRes.ok) {
+      const err = await tokenRes.text();
+      throw new Error(`Token exchange failed: ${err}`);
+    }
+    
+    const tokenData = await tokenRes.json();
+    const accessToken = tokenData.access_token;
+    
+    // 2. Fetch user profile
+    const userRes = await fetch('https://auth.delta.nitt.edu/api/resources/user', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!userRes.ok) {
+      const err = await userRes.text();
+      throw new Error(`User fetch failed: ${err}`);
+    }
+    
+    const userData = await userRes.json();
+    
+    res.json({ user: userData, token: accessToken });
+    
+  } catch (error) {
+    console.error('DAuth Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/auth/dauth/url
+app.get('/api/auth/dauth/url', (req, res) => {
+  const clientId = process.env.DAUTH_CLIENT_ID;
+  const redirectUri = process.env.DAUTH_REDIRECT_URI;
+  const state = Math.random().toString(36).substring(7); // Simple random state
+  
+  if (!clientId || !redirectUri) {
+    return res.status(500).json({ error: 'DAuth credentials not configured on backend.' });
+  }
+
+  // Common DAuth scopes: email, profile, user, openid, oidc
+  const authUrl = `https://auth.delta.nitt.edu/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent('email profile user oidc')}&state=${state}&nonce=${state}`;
+  
+  res.json({ url: authUrl });
+});
+
 app.listen(port, () => {
+
   console.log(`Backend server running on http://localhost:${port}`);
 });
