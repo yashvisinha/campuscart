@@ -1,0 +1,35 @@
+.onboarding-screen {
+  width: min(100%, 430px);
+  height: 100dvh;
+  margin: 0 auto;
+  background: var(--bg-main);
+  overflow: hidden;
+  position: relative;
+}
+
+.onboarding-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.onboarding-next-btn {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #0d2e2e;
+  color: white;
+  border: none;
+  padding: 14px 60px;
+  border-radius: 30px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.onboarding-next-btn:hover {
+  background-color: #154545;
+}
