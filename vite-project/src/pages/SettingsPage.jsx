@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, LogOut } from 'lucide-react';
 import './SettingsPage.css';           // ← Now importing from same folder
@@ -15,6 +15,27 @@ function SettingsPage() {
   const [userName, setUserName] = useState("Your Name");
   const [address, setAddress] = useState("OPAL-C 99W");
   const [profilePic, setProfilePic] = useState(pfpDefault);
+
+  // Load user data from DAuth local session
+  useEffect(() => {
+    try {
+      const storedUser = localStorage.getItem('dauth_user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        if (user.name) setUserName(user.name);
+        if (user.email) setAddress(user.email);
+      }
+    } catch (err) {
+      console.error('Failed to load user info:', err);
+    }
+  }, []);
+
+  // Logout Logic
+  const handleLogout = () => {
+    localStorage.removeItem('dauth_user');
+    localStorage.removeItem('dauth_token');
+    navigate('/login');
+  };
 
   // Edit Profile Picture
   const openEditModal = () => setIsEditOpen(true);
@@ -89,7 +110,7 @@ function SettingsPage() {
       </div>
 
       {/* Logout Button */}
-      <button className="logout-btn" onClick={() => alert("Logged out!")}>
+      <button className="logout-btn" onClick={handleLogout}>
         <LogOut size={24} />
         Logout
       </button>

@@ -21,6 +21,7 @@ import Onboarding from './pages/Onboarding';
 import AuthCallback from './pages/AuthCallback';
 import WishlistPage from './pages/WishlistPage';
 import NotificationsPage from './pages/NotificationsPage';
+import ConversationPage from './pages/ConversationPage';
 import { WishlistProvider } from './context/WishlistContext';
 
 // Bottom navigation component
@@ -93,6 +94,9 @@ function App() {
 
           {/*notifications page*/}
           <Route path="/notifications" element={<PageLayout><NotificationsPage /></PageLayout>} />
+
+          {/*conversation page*/}
+          <Route path="/conversation/:otherUserId" element={<PageLayout><ConversationPage /></PageLayout>} />
         </Routes>
       </Router>
     </WishlistProvider>
