@@ -86,11 +86,21 @@ const ProductPage = () => {
           <h2 className="pp-name">{product.name}</h2>
           <div className="pp-price">₹{product.price}</div>
 
-          {product.stock !== undefined && (
-            <div className={`pp-stock ${product.stock > 0 ? 'pp-stock--in' : 'pp-stock--out'}`}>
-              {product.stock > 0 ? `In Stock (${product.stock} left)` : 'Out of Stock'}
-            </div>
-          )}
+          <div className="pp-meta-row">
+            {product.stock !== undefined && (
+              <div className={`pp-stock ${product.stock > 0 ? 'pp-stock--in' : 'pp-stock--out'}`}>
+                {product.stock > 0 ? `In Stock (${product.stock} left)` : 'Out of Stock'}
+              </div>
+            )}
+            
+            <button 
+              className="pp-seller-badge"
+              onClick={() => navigate(`/conversation/${product.uploader_id || 'rohan'}`)}
+              aria-label={`Chat with seller ${product.uploader_id || 'rohan'}`}
+            >
+              Seller: <strong>{product.uploader_id || 'rohan'}</strong>
+            </button>
+          </div>
 
           <div className="pp-divider" />
 

@@ -150,6 +150,45 @@
   color: #ff4757;
 }
 
+.pp-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.pp-meta-row .pp-stock {
+  margin-bottom: 0;
+}
+
+.pp-seller-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(191, 252, 255, 0.1);
+  border: 1px solid rgba(191, 252, 255, 0.2);
+  color: #bffcff;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  outline: none;
+}
+
+.pp-seller-badge:hover {
+  background: rgba(191, 252, 255, 0.2);
+  border-color: rgba(191, 252, 255, 0.4);
+}
+
+.pp-seller-badge strong {
+  margin-left: 4px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: capitalize;
+}
+
 .pp-divider {
   height: 1px;
   background: rgba(191,252,255,0.15);
