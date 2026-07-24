@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingCart, Heart } from 'lucide-react';
 import './ProductPage.css';
+import { useWishlist } from '../context/WishlistContext';
 
 const ProductPage = () => {
   const navigate = useNavigate();
@@ -9,9 +10,9 @@ const ProductPage = () => {
   const backTo = location.state?.from || '/home';
   const productId = location.state?.productId;
 
+  const { toggle, isWishlisted } = useWishlist();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [wishlisted, setWishlisted] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -62,11 +63,11 @@ const ProductPage = () => {
         </button>
         <span className="pp-topbar-title">{product.name}</span>
         <button
-          className={`pp-heart ${wishlisted ? 'pp-heart--active' : ''}`}
-          onClick={() => setWishlisted(w => !w)}
+          className={`pp-heart ${product && isWishlisted(product.id) ? 'pp-heart--active' : ''}`}
+          onClick={() => { if (product) { toggle(product); navigate('/wishlist'); } }}
           aria-label="Wishlist"
         >
-          <Heart size={22} fill={wishlisted ? '#ff4757' : 'none'} />
+          <Heart size={22} fill={product && isWishlisted(product.id) ? '#ff4757' : 'none'} />
         </button>
       </div>
 
@@ -109,9 +110,9 @@ const ProductPage = () => {
 
           {/* Action Buttons */}
           <div className="pp-actions">
-            <button className="pp-btn pp-btn--wishlist" onClick={() => setWishlisted(w => !w)}>
-              <Heart size={18} fill={wishlisted ? '#ff4757' : 'none'} />
-              {wishlisted ? 'Wishlisted' : 'Add to Wishlist'}
+            <button className="pp-btn pp-btn--wishlist" onClick={() => { if (product) { toggle(product); navigate('/wishlist'); } }}>
+              <Heart size={18} fill={product && isWishlisted(product.id) ? '#ff4757' : 'none'} />
+              {product && isWishlisted(product.id) ? 'Wishlisted' : 'Add to Wishlist'}
             </button>
             <button className="pp-btn pp-btn--buy">
               <ShoppingCart size={18} />

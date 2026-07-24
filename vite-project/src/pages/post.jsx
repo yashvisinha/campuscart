@@ -6,6 +6,14 @@ import {
 } from "lucide-react";
 import "./post.css";
 
+const toBase64 = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result.split(",")[1]);
+    reader.onerror = reject;
+  });
+
 function PostPage() {
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState(null);
@@ -18,6 +26,9 @@ function PostPage() {
   });
 
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
     if (!selectedImage) {
@@ -30,6 +41,22 @@ function PostPage() {
 
     return () => URL.revokeObjectURL(objectUrl);
   }, [selectedImage]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await fetch("/api/categories");
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          setCategories(data);
+        }
+      } catch (error) {
+        console.error("Failed to load categories", error);
+      }
+    };
+
+    loadCategories();
+  }, []);
 
   const handleFieldChange = (event) => {
     const { name, value } = event.target;
@@ -46,8 +73,57 @@ function PostPage() {
     }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setSubmitError("");
+
+    if (!selectedImage) {
+      setSubmitError("Please add a product photo before posting.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const base64Image = await toBase64(selectedImage);
+
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: formData.title,
+          details: formData.details,
+          price: formData.price,
+          category: formData.category,
+          location: formData.location,
+          imageData: base64Image,
+          imageName: selectedImage.name,
+        }),
+      });
+
+      let result;
+      try {
+        result = await response.json();
+      } catch (parseErr) {
+        // If server returned non-JSON (e.g. HTML error page), include that text in the error
+        const text = await response.text().catch(() => 'Server returned an unexpected response');
+        throw new Error(text || 'Server returned an unexpected response');
+      }
+
+      if (!response.ok) {
+        // Prefer API-provided error message, fall back to whole body text
+        const msg = result?.error || (typeof result === 'string' ? result : JSON.stringify(result));
+        throw new Error(msg || 'Unable to create post.');
+      }
+
+      navigate('/home');
+    } catch (error) {
+      setSubmitError(error.message || "Unable to create post.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -114,13 +190,18 @@ function PostPage() {
 
             <label className="field-row">
               <span className="visually-hidden">Category</span>
-              <input
-                type="text"
+              <select
                 name="category"
                 value={formData.category}
                 onChange={handleFieldChange}
-                placeholder="Category"
-              />
+              >
+                <option value="">Select category</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.name}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
             </label>
 
             <label className="field-row">
@@ -146,8 +227,10 @@ function PostPage() {
             </label>
           </div>
 
-          <button className="post-submit-btn" type="submit">
-            Upload
+          {submitError ? <p className="post-error">{submitError}</p> : null}
+
+          <button className="post-submit-btn" type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Uploading..." : "Upload"}
           </button>
         </form>
       </section>
