@@ -1,5 +1,6 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import { isAuthenticated } from './auth';
 import {
   Home as HomeIcon,
   ShoppingCart as ShoppingCartIcon,
@@ -51,6 +52,10 @@ function PageLayout({ children }) {
   );
 }
 
+function ProtectedRoute({ children }) {
+  return isAuthenticated() ? children : <Navigate to="/login" replace />;
+}
+
 function App() {
   return (
     <WishlistProvider>
@@ -69,34 +74,34 @@ function App() {
           <Route path="/auth/callback" element={<AuthCallback />} />
 
           {/* Home Page */}
-          <Route path="/home" element={<PageLayout><HomePage /></PageLayout>} />
+          <Route path="/home" element={<ProtectedRoute><PageLayout><HomePage /></PageLayout></ProtectedRoute>} />
           
           {/* Settings Page */}
-          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
           
           {/* Product Page */}
-          <Route path="/product" element={<PageLayout><ProductPage /></PageLayout>} />
+          <Route path="/product" element={<ProtectedRoute><PageLayout><ProductPage /></PageLayout></ProtectedRoute>} />
 
           {/* You Page */}
-          <Route path="/you" element={<PageLayout><YouPage /></PageLayout>} />
+          <Route path="/you" element={<ProtectedRoute><PageLayout><YouPage /></PageLayout></ProtectedRoute>} />
 
           {/*chat page*/}
-          <Route path="/messages" element={<PageLayout><Messages /></PageLayout>} />
+          <Route path="/messages" element={<ProtectedRoute><PageLayout><Messages /></PageLayout></ProtectedRoute>} />
       
           {/*category page*/}
-          <Route path="/category" element={<PageLayout><Category /></PageLayout>} />
+          <Route path="/category" element={<ProtectedRoute><PageLayout><Category /></PageLayout></ProtectedRoute>} />
 
           {/*post page*/}
-          <Route path="/post" element={<PageLayout><PostPage /></PageLayout>} />
+          <Route path="/post" element={<ProtectedRoute><PageLayout><PostPage /></PageLayout></ProtectedRoute>} />
 
           {/*wishlist page*/}
-          <Route path="/wishlist" element={<PageLayout><WishlistPage /></PageLayout>} />
+          <Route path="/wishlist" element={<ProtectedRoute><PageLayout><WishlistPage /></PageLayout></ProtectedRoute>} />
 
           {/*notifications page*/}
-          <Route path="/notifications" element={<PageLayout><NotificationsPage /></PageLayout>} />
+          <Route path="/notifications" element={<ProtectedRoute><PageLayout><NotificationsPage /></PageLayout></ProtectedRoute>} />
 
           {/*conversation page*/}
-          <Route path="/conversation/:otherUserId" element={<PageLayout><ConversationPage /></PageLayout>} />
+          <Route path="/conversation/:otherUserId" element={<ProtectedRoute><PageLayout><ConversationPage /></PageLayout></ProtectedRoute>} />
         </Routes>
       </Router>
     </WishlistProvider>

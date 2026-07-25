@@ -4,6 +4,7 @@ import { ArrowRight, LogOut } from 'lucide-react';
 import './SettingsPage.css';           // ← Now importing from same folder
 
 import pfpDefault from '../assets/pfpDefault.png';
+import { logout } from '../auth';
 
 function SettingsPage() {
   const navigate = useNavigate();
@@ -32,8 +33,7 @@ function SettingsPage() {
 
   // Logout Logic
   const handleLogout = () => {
-    localStorage.removeItem('dauth_user');
-    localStorage.removeItem('dauth_token');
+    logout();
     navigate('/login');
   };
 
