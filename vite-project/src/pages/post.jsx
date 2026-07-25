@@ -4,6 +4,7 @@ import {
   ArrowLeft,
   ArrowUp,
 } from "lucide-react";
+import { supabase } from "../supabaseClient";
 import "./post.css";
 
 function PostPage() {
@@ -16,6 +17,7 @@ function PostPage() {
     location: "",
     details: "",
   });
+  const [submitting, setSubmitting] = useState(false);
 
   const [previewUrl, setPreviewUrl] = useState(null);
 
@@ -46,8 +48,49 @@ function PostPage() {
     }
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (submitting) return;
+    setSubmitting(true);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      alert("Please log in first.");
+      setSubmitting(false);
+      return;
+    }
+
+    if (!formData.title || !formData.price) {
+      alert("Title and price are required.");
+      setSubmitting(false);
+      return;
+    }
+
+    const { error } = await supabase.from("products").insert({
+      name: formData.title,
+      price: parseFloat(formData.price) || 0,
+      description: `${formData.details}${formData.location ? ` Location: ${formData.location}` : ""}`,
+      seller_id: userId,
+      stock: 1,
+      // NOTE: image_url is not set yet — image upload to Supabase Storage
+      // still needs to be built, so new posts won't have a photo for now.
+      // category is also not linked yet since it requires a category_id (uuid),
+      // not the plain text typed in the form.
+    });
+
+    setSubmitting(false);
+
+    if (error) {
+      console.error("Error creating product:", error);
+      alert("Something went wrong posting your item.");
+      return;
+    }
+
+    alert("Item posted!");
+    navigate("/home");
   };
 
   return (
@@ -146,8 +189,8 @@ function PostPage() {
             </label>
           </div>
 
-          <button className="post-submit-btn" type="submit">
-            Upload
+          <button className="post-submit-btn" type="submit" disabled={submitting}>
+            {submitting ? "Posting..." : "Upload"}
           </button>
         </form>
       </section>

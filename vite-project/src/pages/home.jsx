@@ -1,17 +1,10 @@
-// Top bar (icon, search, profile)
-// Hero section (title + carousel cards + dots)
-// Category grid section (alternating tile heights)
-// Bottom navigation bar
-// App shell (full-height mobile viewport + spacing)
-
-// Content area should scroll, top and bottom bars remain visually stable
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Settings as SettingsIcon,
   Bell as BellIcon,
 } from "lucide-react";
+import { supabase } from "../supabaseClient";
 import "./home.css";
 
 //temporary array
@@ -38,9 +31,9 @@ function Header() {
         <input type="text" placeholder="Search" aria-label="Search" />
       </div>
 
-      <button className="icon-btn" aria-label="notifications">
-        <BellIcon size={28} />
-      </button>
+     <button className="icon-btn" aria-label="notifications" onClick={() => navigate('/notifications')}>
+  <BellIcon size={28} />
+</button>
     </header>
   );
 }
@@ -122,17 +115,43 @@ function Categories() {
 
 function RandomElements() {
   const navigate = useNavigate();
-  const tileCount = 4;
+  const [products, setProducts] = useState([]);
+  const [debugMsg, setDebugMsg] = useState("Loading...");
 
-  function renderTiles(count, prefix) {
-    return Array.from({ length: count }, (_, index) => (
+  useEffect(() => {
+    async function fetchProducts() {
+      const { data, error } = await supabase
+        .from("products")
+        .select("id, name, price, image_url")
+        .limit(8);
+
+      if (error) {
+        setDebugMsg("ERROR: " + JSON.stringify(error));
+      } else if (!data || data.length === 0) {
+        setDebugMsg("Fetch worked but returned 0 products.");
+        setProducts([]);
+      } else {
+        setDebugMsg("Success: " + data.length + " products loaded.");
+        setProducts(data);
+      }
+    }
+    fetchProducts();
+  }, []);
+
+  function renderTiles(items, prefix) {
+    return items.map((product, index) => (
       <button
-        key={`${prefix}-${index}`}
+        key={`${prefix}-${product.id}-${index}`}
         type="button"
         className="tile"
-        style={{ height: "170px" }}
-        onClick={() => navigate("/product", { state: { from: "/home" } })}
-        aria-label="Open product preview"
+        style={{
+          height: "170px",
+          backgroundImage: product.image_url ? `url(${product.image_url})` : "none",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+        onClick={() => navigate(`/product/${product.id}`, { state: { from: "/home" } })}
+        aria-label={product.name || "Open product preview"}
       />
     ));
   }
@@ -142,17 +161,22 @@ function RandomElements() {
       className="random-marquee"
       aria-label="Auto scrolling categories preview"
     >
+      {/* TEMP DEBUG LINE — remove after fixing */}
+      <p style={{ color: "red", fontSize: "13px", padding: "8px" }}>
+        DEBUG: {debugMsg}
+      </p>
+
       <div className="marquee-column marquee-up">
         <div className="marquee-track">
-          {renderTiles(tileCount, "left")}
-          {renderTiles(tileCount, "left-copy")}
+          {renderTiles(products, "left")}
+          {renderTiles(products, "left-copy")}
         </div>
       </div>
 
       <div className="marquee-column marquee-down">
         <div className="marquee-track">
-          {renderTiles(tileCount, "right")}
-          {renderTiles(tileCount, "right-copy")}
+          {renderTiles(products, "right")}
+          {renderTiles(products, "right-copy")}
         </div>
       </div>
     </section>
