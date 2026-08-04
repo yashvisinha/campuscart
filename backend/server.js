@@ -20,6 +20,8 @@ const supabaseAdmin = createClient(
   supabaseServiceRoleKey || supabaseKey,
 );
 
+// ─── CATEGORIES ───────────────────────────────────────────────────────
+
 // GET /api/categories
 app.get("/api/categories", async (req, res) => {
   console.log("Fetching categories...");
@@ -32,7 +34,9 @@ app.get("/api/categories", async (req, res) => {
   res.json(data);
 });
 
-// GET /api/products
+// ─── PRODUCTS ─────────────────────────────────────────────────────────
+
+// GET /api/products — public feed, excludes sold items
 app.get("/api/products", async (req, res) => {
   const { category_id } = req.query;
   try {
@@ -50,8 +54,11 @@ app.get("/api/products", async (req, res) => {
     const { data, error } = await query;
     if (error) return res.status(500).json({ error: error.message });
 
+    // Exclude items explicitly marked as sold (NULL or 'available' are shown)
+    const available = (data || []).filter((p) => p.status !== "sold");
+
     // Ensure newest items are first regardless of DB ordering oddities
-    const sorted = (data || []).slice().sort((a, b) => {
+    const sorted = available.slice().sort((a, b) => {
       const da = new Date(a.created_at || 0).getTime();
       const db = new Date(b.created_at || 0).getTime();
       return db - da;
@@ -69,6 +76,44 @@ app.get("/api/products", async (req, res) => {
   }
 });
 
+// GET /api/products/search?q=term — MUST come before /api/products/:id
+app.get("/api/products/search", async (req, res) => {
+  const { q } = req.query;
+  if (!q || !q.trim()) return res.json([]);
+  const term = q.trim().toLowerCase();
+
+  try {
+    const [prodRes, catRes] = await Promise.all([
+      supabase.from("products").select("*").order("created_at", { ascending: false }),
+      supabase.from("categories").select("*"),
+    ]);
+
+    if (prodRes.error) return res.status(500).json({ error: prodRes.error.message });
+
+    const categories = catRes.data || [];
+    const catMap = {};
+    categories.forEach((c) => {
+      catMap[c.id] = c.name ? c.name.toLowerCase() : "";
+    });
+
+    const filtered = (prodRes.data || []).filter((p) => {
+      if (p.status === "sold") return false;
+
+      const nameMatch = p.name && p.name.toLowerCase().includes(term);
+      const descMatch = p.description && p.description.toLowerCase().includes(term);
+      const catName = p.category_id ? catMap[p.category_id] : "";
+      const catMatch = catName && catName.includes(term);
+
+      return nameMatch || descMatch || catMatch;
+    });
+
+    res.json(filtered);
+  } catch (err) {
+    console.error("Search API exception:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/products/:id
 app.get("/api/products/:id", async (req, res) => {
   const { id } = req.params;
@@ -76,7 +121,7 @@ app.get("/api/products/:id", async (req, res) => {
     .from("products")
     .select("*")
     .eq("id", id)
-    .single();
+    .maybeSingle();
 
   if (error) return res.status(500).json({ error: error.message });
   if (!data) return res.status(404).json({ error: "Product not found" });
@@ -206,8 +251,8 @@ app.post("/api/products", async (req, res) => {
       imageUrl,
     });
 
-    // attach uploader if provided
-    if (uploader_id) productPayload.uploader_id = uploader_id;
+    // attach uploader if provided (now always sent from post.jsx)
+    if (uploader_id) productPayload.uploader_id = String(uploader_id);
 
     const { data, error } = await supabase
       .from("products")
@@ -227,7 +272,81 @@ app.post("/api/products", async (req, res) => {
   }
 });
 
-// GET /api/users/:id/products
+// PUT /api/products/:id — owner-only edit
+app.put("/api/products/:id", async (req, res) => {
+  const { id } = req.params;
+  const { title, details, price, category_id, uploader_id, status } = req.body;
+
+  if (!uploader_id) {
+    return res.status(400).json({ error: "uploader_id is required" });
+  }
+
+  // Verify ownership — use maybeSingle so duplicate rows don't crash
+  const { data: existing, error: fetchErr } = await supabase
+    .from("products")
+    .select("uploader_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchErr) return res.status(500).json({ error: fetchErr.message });
+  if (!existing) return res.status(404).json({ error: "Product not found" });
+  if (String(existing.uploader_id) !== String(uploader_id)) {
+    return res.status(403).json({ error: "Not authorized to edit this product" });
+  }
+
+  const updates = {};
+  if (title !== undefined) updates.name = title.trim();
+  if (details !== undefined) updates.description = details.trim();
+  if (price !== undefined && !isNaN(parseFloat(price))) {
+    updates.price = parseFloat(price);
+  }
+  if (category_id !== undefined && category_id !== '') {
+    updates.category_id = category_id;
+  }
+  if (status !== undefined && ['available', 'sold'].includes(status)) {
+    updates.status = status;
+  }
+
+  // Use .select() without .single() — return first updated row
+  const { data, error } = await supabase
+    .from("products")
+    .update(updates)
+    .eq("id", id)
+    .select();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ product: Array.isArray(data) ? data[0] : data });
+});
+
+// DELETE /api/products/:id — owner-only delete
+app.delete("/api/products/:id", async (req, res) => {
+  const { id } = req.params;
+  const { uploader_id } = req.body;
+
+  if (!uploader_id) {
+    return res.status(400).json({ error: "uploader_id is required" });
+  }
+
+  // Verify ownership — maybeSingle handles duplicate rows gracefully
+  const { data: existing, error: fetchErr } = await supabase
+    .from("products")
+    .select("uploader_id")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (fetchErr) return res.status(500).json({ error: fetchErr.message });
+  if (!existing) return res.status(404).json({ error: "Product not found" });
+  if (String(existing.uploader_id) !== String(uploader_id)) {
+    return res.status(403).json({ error: "Not authorized to delete this product" });
+  }
+
+  const { error } = await supabase.from("products").delete().eq("id", id);
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json({ ok: true });
+});
+
+// GET /api/users/:id/products — all products for this user (including sold)
 app.get("/api/users/:id/products", async (req, res) => {
   const { id } = req.params;
   try {
@@ -245,6 +364,221 @@ app.get("/api/users/:id/products", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ─── WISHLIST API ─────────────────────────────────────────────────────
+
+// GET /api/wishlist/:userId — fetch DB-persisted wishlist
+app.get("/api/wishlist/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const { data, error } = await supabase
+    .from("wishlists")
+    .select("product_id, products(*)")
+    .eq("user_id", userId);
+
+  if (error) return res.status(500).json({ error: error.message });
+  // Return flat array of product objects
+  const products = (data || []).map((w) => w.products).filter(Boolean);
+  res.json(products);
+});
+
+// POST /api/wishlist — add product to wishlist
+app.post("/api/wishlist", async (req, res) => {
+  const { user_id, product_id } = req.body;
+  if (!user_id || !product_id) {
+    return res
+      .status(400)
+      .json({ error: "user_id and product_id are required" });
+  }
+
+  const { data, error } = await supabase
+    .from("wishlists")
+    .upsert(
+      { user_id: String(user_id), product_id },
+      { onConflict: "user_id,product_id" },
+    )
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
+// DELETE /api/wishlist/:userId/:productId — remove from wishlist
+app.delete("/api/wishlist/:userId/:productId", async (req, res) => {
+  const { userId, productId } = req.params;
+  const { error } = await supabase
+    .from("wishlists")
+    .delete()
+    .eq("user_id", userId)
+    .eq("product_id", productId);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
+// ─── ORDERS API ───────────────────────────────────────────────────────
+
+// GET /api/orders/user/:userId — all deals (buyer or seller)
+// MUST come before /api/orders/:id to avoid route collision
+app.get("/api/orders/user/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*, products(id, name, image_url, price)")
+    .or(`buyer_id.eq.${userId},seller_id.eq.${userId}`)
+    .order("created_at", { ascending: false });
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || []);
+});
+
+// POST /api/orders — buyer creates a purchase request
+app.post("/api/orders", async (req, res) => {
+  const { product_id, buyer_id, seller_id } = req.body;
+  if (!product_id || !buyer_id || !seller_id) {
+    return res
+      .status(400)
+      .json({ error: "product_id, buyer_id, and seller_id are required" });
+  }
+  if (String(buyer_id) === String(seller_id)) {
+    return res.status(400).json({ error: "You cannot buy your own product" });
+  }
+
+  // Confirm product is still available
+  const { data: product, error: prodErr } = await supabase
+    .from("products")
+    .select("name, status")
+    .eq("id", product_id)
+    .single();
+
+  if (prodErr) return res.status(500).json({ error: prodErr.message });
+  if (!product) return res.status(404).json({ error: "Product not found" });
+  if (product.status === "sold") {
+    return res
+      .status(409)
+      .json({ error: "This product has already been sold" });
+  }
+
+  // Create the order
+  const { data: order, error: orderErr } = await supabase
+    .from("orders")
+    .insert({
+      product_id,
+      buyer_id: String(buyer_id),
+      seller_id: String(seller_id),
+      status: "pending",
+    })
+    .select()
+    .single();
+
+  if (orderErr) return res.status(500).json({ error: orderErr.message });
+
+  // Notify the seller
+  await supabase.from("notifications").insert({
+    user_id: String(seller_id),
+    type: "purchase_request",
+    related_product_id: product_id,
+    related_order_id: order.id,
+    status: "unread",
+    extra_data: { buyer_id: String(buyer_id), product_name: product.name },
+  });
+
+  res.status(201).json({ order });
+});
+
+// PUT /api/orders/:id — seller accepts or declines
+app.put("/api/orders/:id", async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!["accepted", "declined"].includes(status)) {
+    return res
+      .status(400)
+      .json({ error: "status must be 'accepted' or 'declined'" });
+  }
+
+  // Fetch the order first
+  const { data: order, error: fetchErr } = await supabase
+    .from("orders")
+    .select("*")
+    .eq("id", id)
+    .single();
+
+  if (fetchErr) return res.status(500).json({ error: fetchErr.message });
+  if (!order) return res.status(404).json({ error: "Order not found" });
+  if (order.status !== "pending") {
+    return res.status(409).json({ error: "Order has already been resolved" });
+  }
+
+  // Update order status
+  const { data: updatedOrder, error: updateErr } = await supabase
+    .from("orders")
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (updateErr) return res.status(500).json({ error: updateErr.message });
+
+  // If accepted: mark product as sold
+  if (status === "accepted") {
+    await supabase
+      .from("products")
+      .update({ status: "sold" })
+      .eq("id", order.product_id);
+  }
+
+  // Fetch product name for buyer notification
+  const { data: product } = await supabase
+    .from("products")
+    .select("name")
+    .eq("id", order.product_id)
+    .single();
+
+  // Notify the buyer
+  await supabase.from("notifications").insert({
+    user_id: String(order.buyer_id),
+    type: status === "accepted" ? "purchase_accepted" : "purchase_declined",
+    related_product_id: order.product_id,
+    related_order_id: id,
+    status: "unread",
+    extra_data: {
+      seller_id: String(order.seller_id),
+      product_name: product?.name,
+    },
+  });
+
+  res.json({ order: updatedOrder });
+});
+
+// ─── NOTIFICATIONS API ────────────────────────────────────────────────
+
+// GET /api/notifications/:userId
+app.get("/api/notifications/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("*, products(id, name, image_url, price)")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || []);
+});
+
+// PUT /api/notifications/:id/read — mark a notification as read
+app.put("/api/notifications/:id/read", async (req, res) => {
+  const { id } = req.params;
+  const { error } = await supabase
+    .from("notifications")
+    .update({ status: "read" })
+    .eq("id", id);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
+// ─── AUTH / DAuth ─────────────────────────────────────────────────────
 
 async function exchangeDAuthCode(code, redirectUri) {
   const tokenParams = new URLSearchParams({

@@ -1,36 +1,26 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send } from 'lucide-react';
+import { getUserId } from '../auth';
 import './ConversationPage.css';
-
-// Same helper as messages.jsx to get logged-in user
-function getCurrentUserId() {
-  try {
-    const user = JSON.parse(localStorage.getItem('dauth_user'));
-    if (user?.email) {
-      return user.email.split('@')[0].toLowerCase();
-    }
-    if (user?.name) {
-      return user.name.toLowerCase().replace(/\s+/g, '');
-    }
-    return 'hiba';
-  } catch {
-    return 'hiba';
-  }
-}
 
 export default function ConversationPage() {
   const { otherUserId } = useParams();
   const navigate = useNavigate();
-  const currentUser = getCurrentUserId();
+  const currentUser = getUserId();
 
   const [messages, setMessages] = useState([]);
   const [newMsg, setNewMsg] = useState('');
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef(null);
 
-  // Fetch conversation on load
+  // Auth guard & Fetch conversation on load
   useEffect(() => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+
     fetch(`/api/messages/conversation/${currentUser}/${otherUserId}`)
       .then(res => res.json())
       .then(data => {
@@ -41,7 +31,7 @@ export default function ConversationPage() {
         console.error('Error fetching conversation:', err);
         setLoading(false);
       });
-  }, [currentUser, otherUserId]);
+  }, [currentUser, otherUserId, navigate]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -51,7 +41,7 @@ export default function ConversationPage() {
   // Send a new message
   const handleSend = async () => {
     const text = newMsg.trim();
-    if (!text) return;
+    if (!text || !currentUser) return;
 
     // Optimistically add the message to the UI immediately
     const optimisticMsg = {
@@ -96,7 +86,7 @@ export default function ConversationPage() {
           <ArrowLeft size={22} />
         </button>
         <div className="convo-avatar">
-          {otherUserId.split(' ').map(w => w[0]?.toUpperCase()).slice(0, 2).join('')}
+          {String(otherUserId).split(' ').map(w => w[0]?.toUpperCase()).slice(0, 2).join('')}
         </div>
         <h1 className="convo-name">{otherUserId}</h1>
       </header>
@@ -109,7 +99,7 @@ export default function ConversationPage() {
           <p className="convo-status">No messages yet. Say hi! 👋</p>
         ) : (
           messages.map((msg) => {
-            const isMe = msg.sender_id === currentUser;
+            const isMe = String(msg.sender_id) === String(currentUser);
             return (
               <div key={msg.id} className={`bubble-row ${isMe ? 'bubble-row--me' : 'bubble-row--them'}`}>
                 <div className={`bubble ${isMe ? 'bubble--me' : 'bubble--them'}`}>

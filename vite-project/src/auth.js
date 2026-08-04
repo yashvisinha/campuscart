@@ -26,3 +26,29 @@ export function getUser() {
     return null;
   }
 }
+
+/**
+ * Returns the logged-in user's DAuth Roll Number (e.g., '106125040').
+ * Extracted from rollNumber property or email prefix before '@nitt.edu'.
+ */
+export function getUserRollNumber() {
+  try {
+    const user = getUser();
+    if (!user) return null;
+    if (user.rollNumber) return String(user.rollNumber);
+    if (user.email && user.email.includes('@')) {
+      return user.email.split('@')[0];
+    }
+    if (user.id != null) return String(user.id);
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Returns the primary user identifier (Roll Number) to link listings, messages, orders, and wishlist.
+ */
+export function getUserId() {
+  return getUserRollNumber();
+}

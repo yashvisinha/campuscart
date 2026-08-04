@@ -4,23 +4,8 @@ import {
   Settings as SettingsIcon,
   Bell as BellIcon,
 } from "lucide-react";
+import { getUserId } from "../auth";
 import "./messages.css";
-
-// Get the logged-in user's ID (we stored it during DAuth login)
-function getCurrentUserId() {
-  try {
-    const user = JSON.parse(localStorage.getItem('dauth_user'));
-    if (user?.email) {
-      return user.email.split('@')[0].toLowerCase();
-    }
-    if (user?.name) {
-      return user.name.toLowerCase().replace(/\s+/g, '');
-    }
-    return 'hiba';
-  } catch {
-    return 'hiba';
-  }
-}
 
 // Format timestamp to relative time like "2m", "1h", "Yesterday"
 function formatTime(timestamp) {
@@ -68,7 +53,7 @@ function MessageRow({ userId, lastMessage, time, unread, onClick }) {
       style={{ cursor: 'pointer' }}
     >
       <div className="message-avatar" aria-hidden="true">
-        {userId
+        {String(userId)
           .split(" ")
           .map((word) => word[0]?.toUpperCase())
           .slice(0, 2)
@@ -90,9 +75,14 @@ export default function Messages() {
   const navigate = useNavigate();
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(true);
-  const currentUser = getCurrentUserId();
+  const currentUser = getUserId();
 
   useEffect(() => {
+    if (!currentUser) {
+      navigate('/login');
+      return;
+    }
+
     fetch(`/api/messages/chats/${currentUser}`)
       .then(res => res.json())
       .then(data => {
@@ -105,7 +95,7 @@ export default function Messages() {
         console.error('Failed to fetch chats:', err);
         setLoading(false);
       });
-  }, [currentUser]);
+  }, [currentUser, navigate]);
 
   return (
     <>

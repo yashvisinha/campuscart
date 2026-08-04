@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { getUser, getUserId } from "../auth";
 import {
   ArrowLeft,
   ArrowUp,
@@ -29,6 +30,7 @@ function PostPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const [categories, setCategories] = useState([]);
+  const submittingRef = useRef(false); // prevents double-submit
 
   useEffect(() => {
     if (!selectedImage) {
@@ -75,6 +77,7 @@ function PostPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (submittingRef.current) return; // block double-submit
     setSubmitError("");
 
     if (!selectedImage) {
@@ -82,11 +85,13 @@ function PostPage() {
       return;
     }
 
+    submittingRef.current = true;
     setIsSubmitting(true);
 
     try {
       const base64Image = await toBase64(selectedImage);
 
+      const currentUser = getUser();
       const response = await fetch("/api/products", {
         method: "POST",
         headers: {
@@ -100,6 +105,7 @@ function PostPage() {
           location: formData.location,
           imageData: base64Image,
           imageName: selectedImage.name,
+          uploader_id: getUserId() || undefined,
         }),
       });
 
@@ -122,6 +128,7 @@ function PostPage() {
     } catch (error) {
       setSubmitError(error.message || "Unable to create post.");
     } finally {
+      submittingRef.current = false;
       setIsSubmitting(false);
     }
   };

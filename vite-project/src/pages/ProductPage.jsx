@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, ShoppingCart, Heart } from 'lucide-react';
 import './ProductPage.css';
 import { useWishlist } from '../context/WishlistContext';
+import { getUserId } from '../auth';
 
 const ProductPage = () => {
   const navigate = useNavigate();
@@ -13,6 +14,11 @@ const ProductPage = () => {
   const { toggle, isWishlisted } = useWishlist();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [buying, setBuying] = useState(false);
+  const [buyMessage, setBuyMessage] = useState('');
+  const [buyError, setBuyError] = useState('');
+
+  const currentUserId = getUserId();
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -31,6 +37,59 @@ const ProductPage = () => {
     };
     fetchProduct();
   }, [productId]);
+
+  const handleBuyNow = async () => {
+    setBuyError('');
+    setBuyMessage('');
+
+    if (!currentUserId) {
+      navigate('/login');
+      return;
+    }
+
+    if (!product) return;
+
+    if (product.status === 'sold') {
+      setBuyError('This product has already been sold.');
+      return;
+    }
+
+    const sellerId = product.uploader_id;
+    if (!sellerId) {
+      setBuyError('Seller details are missing for this item.');
+      return;
+    }
+
+    if (String(sellerId) === String(currentUserId)) {
+      setBuyError('You cannot buy your own product.');
+      return;
+    }
+
+    setBuying(true);
+
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: product.id,
+          buyer_id: currentUserId,
+          seller_id: sellerId,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to place purchase request.');
+      }
+
+      setBuyMessage('Purchase request sent! The seller has been notified.');
+    } catch (err) {
+      setBuyError(err.message || 'Unable to buy product.');
+    } finally {
+      setBuying(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -54,6 +113,9 @@ const ProductPage = () => {
     );
   }
 
+  const sellerDisplayName = product.uploader_id || 'Unknown seller';
+  const isSold = product.status === 'sold';
+
   return (
     <div className="pp-page">
       {/* Top Bar */}
@@ -64,7 +126,7 @@ const ProductPage = () => {
         <span className="pp-topbar-title">{product.name}</span>
         <button
           className={`pp-heart ${product && isWishlisted(product.id) ? 'pp-heart--active' : ''}`}
-          onClick={() => { if (product) { toggle(product); navigate('/wishlist'); } }}
+          onClick={() => { if (product) { toggle(product); } }}
           aria-label="Wishlist"
         >
           <Heart size={22} fill={product && isWishlisted(product.id) ? '#ff4757' : 'none'} />
@@ -88,19 +150,21 @@ const ProductPage = () => {
           <div className="pp-price">₹{product.price}</div>
 
           <div className="pp-meta-row">
-            {product.stock !== undefined && (
-              <div className={`pp-stock ${product.stock > 0 ? 'pp-stock--in' : 'pp-stock--out'}`}>
-                {product.stock > 0 ? `In Stock (${product.stock} left)` : 'Out of Stock'}
-              </div>
-            )}
+            <div className={`pp-stock ${isSold ? 'pp-stock--out' : 'pp-stock--in'}`}>
+              {isSold ? 'Sold' : 'Available'}
+            </div>
             
-            <button 
-              className="pp-seller-badge"
-              onClick={() => navigate(`/conversation/${product.uploader_id || 'rohan'}`)}
-              aria-label={`Chat with seller ${product.uploader_id || 'rohan'}`}
-            >
-              Seller: <strong>{product.uploader_id || 'rohan'}</strong>
-            </button>
+            {product.uploader_id ? (
+              <button 
+                className="pp-seller-badge"
+                onClick={() => navigate(`/conversation/${product.uploader_id}`)}
+                aria-label={`Chat with seller ${product.uploader_id}`}
+              >
+                Seller: <strong>{sellerDisplayName}</strong>
+              </button>
+            ) : (
+              <span className="pp-seller-badge">Seller: Unknown</span>
+            )}
           </div>
 
           <div className="pp-divider" />
@@ -108,15 +172,23 @@ const ProductPage = () => {
           <h3 className="pp-section-title">Description</h3>
           <p className="pp-description">{product.description || 'No description available.'}</p>
 
+          {buyError && <p style={{ color: '#ff4757', marginTop: '12px', fontSize: '14px' }}>{buyError}</p>}
+          {buyMessage && <p style={{ color: '#2ed573', marginTop: '12px', fontSize: '14px' }}>{buyMessage}</p>}
+
           {/* Action Buttons */}
-          <div className="pp-actions">
-            <button className="pp-btn pp-btn--wishlist" onClick={() => { if (product) { toggle(product); navigate('/wishlist'); } }}>
+          <div className="pp-actions" style={{ marginTop: '16px' }}>
+            <button className="pp-btn pp-btn--wishlist" onClick={() => { if (product) { toggle(product); } }}>
               <Heart size={18} fill={product && isWishlisted(product.id) ? '#ff4757' : 'none'} />
               {product && isWishlisted(product.id) ? 'Wishlisted' : 'Add to Wishlist'}
             </button>
-            <button className="pp-btn pp-btn--buy">
+            <button 
+              className="pp-btn pp-btn--buy"
+              onClick={handleBuyNow}
+              disabled={buying || isSold}
+              style={{ opacity: isSold ? 0.6 : 1 }}
+            >
               <ShoppingCart size={18} />
-              Buy Now
+              {isSold ? 'Sold Out' : buying ? 'Sending...' : 'Buy Now'}
             </button>
           </div>
         </div>

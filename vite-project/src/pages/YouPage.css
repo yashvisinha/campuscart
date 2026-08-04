@@ -29,48 +29,17 @@
   z-index: 1;
 }
 
-.you-search-pill {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: #efdfd0;
-  border-radius: 999px;
-  padding: 10px 14px;
-}
-
-.you-search-icon {
-  font-size: 14px;
-  color: #3b4b57;
-}
-
-.you-search-pill input {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: #0f2a2b;
-  font-size: 14px;
-}
-
-.you-top-icon {
-  width: 44px;
-  height: 44px;
-  border: none;
-  border-radius: 14px;
-  background: #184849;
-  color: #f5f2ea;
-  display: grid;
-  place-items: center;
-  cursor: pointer;
-}
-
 .you-page-title {
   font-size: 32px;
   line-height: 1.1;
   color: #bffcff;
   margin: 18px 16px 14px;
   font-weight: 700;
+}
+
+.you-body {
+  padding: 0 16px 80px;
+  overflow-y: auto;
 }
 
 .you-section {
@@ -92,60 +61,306 @@
 }
 
 .you-section-subtitle {
-  color: #d7f8f7;
+  color: #a0d8d0;
   font-size: 14px;
-}
-
-.you-cards-row {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.you-card {
-  min-height: 94px;
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: var(--bg-card);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
   cursor: pointer;
 }
 
-.you-body {
-  padding: 0 16px 20px;
+.you-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
-.you-card:hover {
-  transform: translateY(-1px);
-}
-
-.you-bottom-nav {
-  height: 64px;
-  background: var(--nav-bg);
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding: 0 10px;
-  flex-shrink: 0;
-}
-
-.nav-icon {
-  width: 46px;
-  height: 46px;
-  border: none;
+.you-listing-card {
+  background: rgba(32, 100, 102, 0.35);
+  border: 1px solid rgba(191, 252, 255, 0.2);
   border-radius: 16px;
-  background: transparent;
-  color: #111;
-  display: grid;
-  place-items: center;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   cursor: pointer;
+  position: relative;
+  transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
-.nav-icon.active {
-  background: #bffcff;
+.you-listing-card:hover {
+  transform: translateY(-2px);
+  border-color: #bffcff;
+}
+
+.you-card-img-wrap {
+  width: 100%;
+  height: 110px;
+  background-size: cover;
+  background-position: center;
+  background-color: rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.you-status-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.you-status-badge--available {
+  background: rgba(46, 213, 115, 0.9);
   color: #0f2a2b;
 }
 
-.you-body {
-  padding-bottom: 20px;
+.you-status-badge--sold {
+  background: rgba(255, 71, 87, 0.9);
+  color: #ffffff;
 }
+
+.you-card-details {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.you-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.you-card-price {
+  font-size: 14px;
+  font-weight: 700;
+  color: #bffcff;
+}
+
+.you-edit-label {
+  font-size: 11px;
+  color: #a0d8d0;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.you-empty-text {
+  color: #888;
+  font-size: 14px;
+  padding: 16px 0;
+}
+
+/* Edit Modal */
+.you-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.you-modal-content {
+  background: #184849;
+  border: 1px solid #bffcff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 380px;
+  padding: 20px;
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+.you-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.you-modal-header h2 {
+  font-size: 20px;
+  color: #bffcff;
+  margin: 0;
+}
+
+.you-modal-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.you-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.you-form-group label {
+  font-size: 12px;
+  color: #a0d8d0;
+  font-weight: 600;
+}
+
+.you-form-group input,
+.you-form-group select,
+.you-form-group textarea {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(191, 252, 255, 0.3);
+  border-radius: 10px;
+  padding: 10px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+}
+
+.you-form-group input:focus,
+.you-form-group select:focus,
+.you-form-group textarea:focus {
+  border-color: #bffcff;
+}
+
+.you-modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.you-btn-cancel {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  border-radius: 12px;
+  padding: 12px;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.you-btn-save {
+  flex: 1;
+  background: #bffcff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px;
+  color: #0f2a2b;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.you-btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Delete button (ghost, left-aligned) */
+.you-btn-delete-ghost {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: transparent;
+  border: 1px solid rgba(255, 71, 87, 0.5);
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: #ff6b7a;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+
+.you-btn-delete-ghost:hover {
+  background: rgba(255, 71, 87, 0.12);
+  border-color: #ff4757;
+  color: #ff4757;
+}
+
+/* Solid red delete confirm button */
+.you-btn-delete {
+  flex: 1;
+  background: #ff4757;
+  border: none;
+  border-radius: 12px;
+  padding: 12px;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.you-btn-delete:hover:not(:disabled) {
+  background: #e8323f;
+}
+
+.you-btn-delete:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Inline "Are you sure?" text */
+.you-delete-confirm-text {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: #ff6b7a;
+  font-weight: 600;
+  white-space: nowrap;
+  margin-right: auto;
+}
+
+/* Status toggle pill in modal header */
+.you-status-toggle {
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  border-radius: 20px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.you-status-toggle:active {
+  transform: scale(0.95);
+}
+
+.you-status-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.you-status-toggle--available {
+  background: rgba(39, 174, 96, 0.2);
+  color: #2ecc71;
+  border: 1px solid rgba(39, 174, 96, 0.4);
+}
+
+.you-status-toggle--sold {
+  background: rgba(255, 71, 87, 0.2);
+  color: #ff6b7a;
+  border: 1px solid rgba(255, 71, 87, 0.4);
+}
+
+.you-status-toggle--available:hover:not(:disabled) {
+  background: rgba(39, 174, 96, 0.35);
+}
+
+.you-status-toggle--sold:hover:not(:disabled) {
+  background: rgba(255, 71, 87, 0.35);
+}
+

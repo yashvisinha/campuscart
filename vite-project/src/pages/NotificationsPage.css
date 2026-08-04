@@ -2,8 +2,8 @@
   display: flex;
   align-items: center;
   padding: 16px 20px;
-  background-color: #121212;
-  border-bottom: 1px solid #333;
+  background-color: #123c3d;
+  border-bottom: 1px solid rgba(191, 252, 255, 0.2);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -25,7 +25,7 @@
 .notif-title {
   font-size: 20px;
   font-weight: 600;
-  color: #fff;
+  color: #bffcff;
   margin: 0;
   flex: 1;
 }
@@ -39,44 +39,73 @@
   border-radius: 20px;
 }
 
+.notif-tabs {
+  display: flex;
+  background-color: #123c3d;
+  border-bottom: 1px solid rgba(191, 252, 255, 0.2);
+  padding: 0 20px;
+}
+
+.notif-tab {
+  flex: 1;
+  padding: 12px 0;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #a0d8d0;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.notif-tab--active {
+  color: #bffcff;
+  border-bottom-color: #bffcff;
+}
+
 .notif-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
   padding: 20px;
-  background-color: #121212;
-  min-height: calc(100vh - 60px); /* Adjust based on topbar height */
-  padding-bottom: 100px; /* Space for bottom nav */
+  background-color: #184849;
+  min-height: calc(100vh - 110px);
+  padding-bottom: 100px;
 }
 
 .notif-item {
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
+  flex-direction: column;
+  gap: 12px;
   padding: 16px;
-  background-color: var(--card-bg, #1e1e1e);
-  border: 1px solid var(--card-border, #333);
+  background-color: rgba(32, 100, 102, 0.4);
+  border: 1px solid rgba(191, 252, 255, 0.2);
   border-radius: 16px;
   position: relative;
   transition: transform 0.2s ease;
 }
 
-.notif-item:active {
-  transform: scale(0.98);
+.notif-item--unread {
+  border-left: 4px solid #bffcff;
 }
 
-.notif-item--unread {
-  border-left: 4px solid var(--card-border);
+.notif-item-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
 }
 
 .notif-icon-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(191, 252, 255, 0.1);
+  color: #bffcff;
   flex-shrink: 0;
 }
 
@@ -84,11 +113,11 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .notif-item-title {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: #fff;
   margin: 0;
@@ -96,25 +125,84 @@
 }
 
 .notif-item-body {
-  font-size: 14px;
-  color: #aaa;
+  font-size: 13px;
+  color: #d7f8f7;
   margin: 0;
   line-height: 1.4;
 }
 
 .notif-time {
-  font-size: 12px;
-  color: #666;
-  margin-top: 4px;
-  font-weight: 500;
+  font-size: 11px;
+  color: #a0d8d0;
+  margin-top: 2px;
 }
 
-.notif-dot {
-  width: 8px;
-  height: 8px;
-  background-color: #ff4757;
-  border-radius: 50%;
-  position: absolute;
-  top: 16px;
-  right: 16px;
+.notif-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.notif-btn-accept {
+  flex: 1;
+  background: #2ed573;
+  color: #0f2a2b;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.notif-btn-decline {
+  flex: 1;
+  background: rgba(255, 71, 87, 0.2);
+  color: #ff4757;
+  border: 1px solid rgba(255, 71, 87, 0.4);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.notif-btn-accept:hover,
+.notif-btn-decline:hover {
+  opacity: 0.9;
+}
+
+.notif-btn-accept:disabled,
+.notif-btn-decline:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.deal-status-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  align-self: flex-start;
+}
+
+.deal-status-pill--pending {
+  background: rgba(255, 165, 0, 0.2);
+  color: #ffa500;
+  border: 1px solid rgba(255, 165, 0, 0.4);
+}
+
+.deal-status-pill--accepted {
+  background: rgba(46, 213, 115, 0.2);
+  color: #2ed573;
+  border: 1px solid rgba(46, 213, 115, 0.4);
+}
+
+.deal-status-pill--declined {
+  background: rgba(255, 71, 87, 0.2);
+  color: #ff4757;
+  border: 1px solid rgba(255, 71, 87, 0.4);
 }

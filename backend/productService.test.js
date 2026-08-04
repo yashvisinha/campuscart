@@ -18,3 +18,17 @@ test('buildProductPayload combines description and location into the product rec
   assert.equal(payload.category_id, 'cat-1');
   assert.equal(payload.image_url, 'https://example.com/calculator.png');
 });
+
+test('regression: product description never injects "Rohan" or fake default seller names', () => {
+  const payload = buildProductPayload({
+    title: 'Notebook',
+    details: 'Brand new lined notebook',
+    price: '5.00',
+    categoryId: 'cat-2',
+    location: 'Library',
+    imageUrl: null,
+  });
+
+  assert.doesNotMatch(payload.description, /Rohan/i);
+  assert.equal(payload.description, 'Brand new lined notebook\nLocation: Library');
+});
