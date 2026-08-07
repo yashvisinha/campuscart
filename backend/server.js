@@ -1,6 +1,10 @@
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
+const path = require("path");
+require("dotenv").config({
+  path: path.join(__dirname, ".env"),
+  override: true,
+});
 const { createClient } = require("@supabase/supabase-js");
 const { buildProductPayload } = require("./productService");
 
@@ -36,16 +40,25 @@ async function ensureCategoriesExist() {
   try {
     const { data, error } = await dbClient.from("categories").select("*");
     if (!error && (!data || data.length === 0)) {
-      console.log("Categories table in Supabase is empty. Attempting auto-seed...");
+      console.log(
+        "Categories table in Supabase is empty. Attempting auto-seed...",
+      );
       const { data: inserted, error: insertErr } = await dbClient
         .from("categories")
         .insert(DEFAULT_CATEGORY_NAMES.map((name) => ({ name })))
         .select();
 
       if (insertErr) {
-        console.error("Auto-seed categories failed (RLS enabled on categories table):", insertErr.message);
+        console.error(
+          "Auto-seed categories failed (RLS enabled on categories table):",
+          insertErr.message,
+        );
       } else {
-        console.log("Categories successfully seeded into Supabase:", inserted?.length, "rows.");
+        console.log(
+          "Categories successfully seeded into Supabase:",
+          inserted?.length,
+          "rows.",
+        );
       }
     }
   } catch (err) {
@@ -129,11 +142,15 @@ app.get("/api/products/search", async (req, res) => {
 
   try {
     const [prodRes, catRes] = await Promise.all([
-      supabase.from("products").select("*").order("created_at", { ascending: false }),
+      supabase
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false }),
       supabase.from("categories").select("*"),
     ]);
 
-    if (prodRes.error) return res.status(500).json({ error: prodRes.error.message });
+    if (prodRes.error)
+      return res.status(500).json({ error: prodRes.error.message });
 
     const categories = catRes.data || [];
     const catMap = {};
@@ -145,7 +162,8 @@ app.get("/api/products/search", async (req, res) => {
       if (p.status === "sold") return false;
 
       const nameMatch = p.name && p.name.toLowerCase().includes(term);
-      const descMatch = p.description && p.description.toLowerCase().includes(term);
+      const descMatch =
+        p.description && p.description.toLowerCase().includes(term);
       const catName = p.category_id ? catMap[p.category_id] : "";
       const catMatch = catName && catName.includes(term);
 
@@ -246,17 +264,25 @@ app.post("/api/products", async (req, res) => {
         }
 
         if (uploadRes.error) {
-          console.error("Image upload error (using Data URL fallback):", uploadRes.error.message || uploadRes.error);
+          console.error(
+            "Image upload error (using Data URL fallback):",
+            uploadRes.error.message || uploadRes.error,
+          );
           imageUrl = `data:${contentType};base64,${imageData}`;
         } else {
           // getPublicUrl returns { data: { publicUrl } }
           const publicRes = storageClient.storage
             .from("products")
             .getPublicUrl(fileName);
-          imageUrl = publicRes?.data?.publicUrl || `data:${contentType};base64,${imageData}`;
+          imageUrl =
+            publicRes?.data?.publicUrl ||
+            `data:${contentType};base64,${imageData}`;
         }
       } catch (storageError) {
-        console.error("Image upload exception (using Data URL fallback):", storageError);
+        console.error(
+          "Image upload exception (using Data URL fallback):",
+          storageError,
+        );
         imageUrl = `data:image/jpeg;base64,${imageData}`;
       }
     }
@@ -277,8 +303,9 @@ app.post("/api/products", async (req, res) => {
       if (Array.isArray(existingCats) && existingCats.length > 0) {
         const match = existingCats.find(
           (c) =>
-            (c.name && c.name.toLowerCase() === String(category).toLowerCase()) ||
-            c.id === category
+            (c.name &&
+              c.name.toLowerCase() === String(category).toLowerCase()) ||
+            c.id === category,
         );
         if (match) {
           categoryId = match.id;
@@ -351,7 +378,9 @@ app.put("/api/products/:id", async (req, res) => {
   if (fetchErr) return res.status(500).json({ error: fetchErr.message });
   if (!existing) return res.status(404).json({ error: "Product not found" });
   if (String(existing.uploader_id) !== String(uploader_id)) {
-    return res.status(403).json({ error: "Not authorized to edit this product" });
+    return res
+      .status(403)
+      .json({ error: "Not authorized to edit this product" });
   }
 
   const updates = {};
@@ -360,10 +389,10 @@ app.put("/api/products/:id", async (req, res) => {
   if (price !== undefined && !isNaN(parseFloat(price))) {
     updates.price = parseFloat(price);
   }
-  if (category_id !== undefined && category_id !== '') {
+  if (category_id !== undefined && category_id !== "") {
     updates.category_id = category_id;
   }
-  if (status !== undefined && ['available', 'sold'].includes(status)) {
+  if (status !== undefined && ["available", "sold"].includes(status)) {
     updates.status = status;
   }
 
@@ -397,7 +426,9 @@ app.delete("/api/products/:id", async (req, res) => {
   if (fetchErr) return res.status(500).json({ error: fetchErr.message });
   if (!existing) return res.status(404).json({ error: "Product not found" });
   if (String(existing.uploader_id) !== String(uploader_id)) {
-    return res.status(403).json({ error: "Not authorized to delete this product" });
+    return res
+      .status(403)
+      .json({ error: "Not authorized to delete this product" });
   }
 
   const { error } = await supabase.from("products").delete().eq("id", id);
@@ -641,19 +672,52 @@ app.put("/api/notifications/:id/read", async (req, res) => {
 // ─── AUTH / DAuth ─────────────────────────────────────────────────────
 
 async function exchangeDAuthCode(code, redirectUri) {
+  const clientId = process.env.DAUTH_CLIENT_ID;
+  const clientSecret = process.env.DAUTH_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error(
+      "DAuth client credentials are not configured on the backend.",
+    );
+  }
+
   const tokenParams = new URLSearchParams({
-    client_id: process.env.DAUTH_CLIENT_ID,
-    client_secret: process.env.DAUTH_CLIENT_SECRET,
+    client_id: clientId,
+    client_secret: clientSecret,
     grant_type: "authorization_code",
     redirect_uri: redirectUri,
     code,
   });
 
-  const tokenRes = await fetch("https://auth.delta.nitt.edu/api/oauth/token", {
+  let tokenRes = await fetch("https://auth.delta.nitt.edu/api/oauth/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: tokenParams,
   });
+
+  if (!tokenRes.ok) {
+    const err = await tokenRes.text();
+
+    if (err.includes("invalid_client")) {
+      const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString(
+        "base64",
+      );
+      const fallbackParams = new URLSearchParams({
+        grant_type: "authorization_code",
+        redirect_uri: redirectUri,
+        code,
+      });
+
+      tokenRes = await fetch("https://auth.delta.nitt.edu/api/oauth/token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: `Basic ${basicAuth}`,
+        },
+        body: fallbackParams,
+      });
+    }
+  }
 
   if (!tokenRes.ok) {
     const err = await tokenRes.text();
