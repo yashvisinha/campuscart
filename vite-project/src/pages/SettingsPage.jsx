@@ -9,15 +9,19 @@ import { logout } from '../auth';
 function SettingsPage() {
   const navigate = useNavigate();
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isResetPasswordOpen, setIsResetPasswordOpen] = useState(false);
-  const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
-  const [comingSoonTitle, setComingSoonTitle] = useState("");
+  const [isSupportOpen, setIsSupportOpen] = useState(false);
+  const [isContactOpen, setIsContactOpen] = useState(false);
+  const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
+  const [suggestionText, setSuggestionText] = useState("");
+  const [suggestionSubmitted, setSuggestionSubmitted] = useState(false);
 
   const [userName, setUserName] = useState("Your Name");
   const [address, setAddress] = useState("OPAL-C 99W");
   const [profilePic, setProfilePic] = useState(pfpDefault);
+  const [tempPfp, setTempPfp] = useState(null);
+  const [selectedFileName, setSelectedFileName] = useState("");
 
-  // Load user data from DAuth local session
+  // Load user data from DAuth local session & saved PFP
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem('dauth_user');
@@ -25,6 +29,10 @@ function SettingsPage() {
         const user = JSON.parse(storedUser);
         if (user.name) setUserName(user.name);
         if (user.email) setAddress(user.email);
+      }
+      const savedPfp = localStorage.getItem('dauth_user_pfp');
+      if (savedPfp) {
+        setProfilePic(savedPfp);
       }
     } catch (err) {
       console.error('Failed to load user info:', err);
@@ -38,29 +46,38 @@ function SettingsPage() {
   };
 
   // Edit Profile Picture
-  const openEditModal = () => setIsEditOpen(true);
-  const closeEditModal = () => setIsEditOpen(false);
-
-  // Reset Password
-  const openResetPasswordModal = () => setIsResetPasswordOpen(true);
-  const closeResetModal = () => setIsResetPasswordOpen(false);
-
-  // Coming Soon
-  const openComingSoon = (title) => {
-    setComingSoonTitle(title);
-    setIsComingSoonOpen(true);
+  const openEditModal = () => {
+    setTempPfp(null);
+    setSelectedFileName("");
+    setIsEditOpen(true);
   };
-  const closeComingSoon = () => setIsComingSoonOpen(false);
+  const closeEditModal = () => {
+    setTempPfp(null);
+    setSelectedFileName("");
+    setIsEditOpen(false);
+  };
 
   const handlePfpChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setProfilePic(imageUrl);
+      setSelectedFileName(file.name);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setTempPfp(event.target.result);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const savePfpChanges = () => {
+    if (tempPfp) {
+      setProfilePic(tempPfp);
+      try {
+        localStorage.setItem('dauth_user_pfp', tempPfp);
+      } catch (err) {
+        console.error('Failed to save profile picture to localStorage:', err);
+      }
+    }
     setIsEditOpen(false);
   };
 
@@ -91,20 +108,16 @@ function SettingsPage() {
 
       {/* Menu Items */}
       <div className="menu-list">
-        <div className="menu-item" onClick={openResetPasswordModal}>
-          <span>Reset Password</span>
-          <ArrowRight size={22} />
-        </div>
-        <div className="menu-item" onClick={() => openComingSoon("Bank/UPI Details")}>
-          <span>Bank/UPI Details</span>
-          <ArrowRight size={22} />
-        </div>
-        <div className="menu-item" onClick={() => openComingSoon("IDK Something")}>
-          <span>IDK Something</span>
-          <ArrowRight size={22} />
-        </div>
-        <div className="menu-item" onClick={() => openComingSoon("Support")}>
+        <div className="menu-item" onClick={() => setIsSupportOpen(true)}>
           <span>Support</span>
+          <ArrowRight size={22} />
+        </div>
+        <div className="menu-item" onClick={() => setIsContactOpen(true)}>
+          <span>Contact Us</span>
+          <ArrowRight size={22} />
+        </div>
+        <div className="menu-item" onClick={() => { setSuggestionText(""); setSuggestionSubmitted(false); setIsSuggestionsOpen(true); }}>
+          <span>Suggestions</span>
           <ArrowRight size={22} />
         </div>
       </div>
@@ -129,8 +142,17 @@ function SettingsPage() {
                   <button className="choose-file-btn" onClick={() => document.getElementById('pfp-input').click()}>
                     Choose File
                   </button>
-                  <span className="file-name">No file chosen</span>
+                  <span className="file-name">{selectedFileName || "No file chosen"}</span>
                 </div>
+                {tempPfp && (
+                  <div style={{ marginTop: '12px', textAlign: 'center' }}>
+                    <img
+                      src={tempPfp}
+                      alt="Preview"
+                      style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #58aeb0' }}
+                    />
+                  </div>
+                )}
                 <input
                   id="pfp-input"
                   type="file"
@@ -151,53 +173,102 @@ function SettingsPage() {
         </div>
       )}
 
-      {/* ====================== Reset Password Modal ====================== */}
-      {isResetPasswordOpen && (
+      {/* ====================== Support Modal ====================== */}
+      {isSupportOpen && (
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>Reset Password</h2>
+              <h2>Support</h2>
             </div>
-
-            <div className="modal-body">
-              <div className="input-group">
-                <label>Current Password</label>
-                <input type="password" placeholder="Enter current password" />
-              </div>
-              <div className="input-group">
-                <label>New Password</label>
-                <input type="password" placeholder="Enter new password" />
-              </div>
-              <div className="input-group">
-                <label>Confirm New Password</label>
-                <input type="password" placeholder="Confirm new password" />
-              </div>
+            <div className="modal-body" style={{ textAlign: 'center', padding: '30px 20px' }}>
+              <p style={{ fontSize: '15px', color: '#a0d8d0', marginBottom: '8px' }}>
+                For queries or assistance, email us at:
+              </p>
+              <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#bffcff' }}>
+                abs@gmail.com
+              </p>
             </div>
-
             <div className="modal-footer">
-              <button className="cancel-btn" onClick={closeResetModal}>Cancel</button>
-              <button className="save-btn">Reset Password</button>
+              <button className="save-btn" onClick={() => setIsSupportOpen(false)}>Close</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ====================== Coming Soon Modal ====================== */}
-      {isComingSoonOpen && (
+      {/* ====================== Contact Us Modal ====================== */}
+      {isContactOpen && (
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>{comingSoonTitle}</h2>
+              <h2>Contact Us</h2>
             </div>
-
-            <div className="modal-body" style={{ textAlign: 'center', padding: '50px 20px' }}>
-              <p style={{ fontSize: '18px', color: '#a0d8d0' }}>
-                This feature is coming soon!
+            <div className="modal-body" style={{ textAlign: 'center', padding: '30px 20px' }}>
+              <p style={{ fontSize: '15px', color: '#a0d8d0', marginBottom: '8px' }}>
+                You can reach us at:
+              </p>
+              <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#bffcff' }}>
+                +91 98765 43210
               </p>
             </div>
-
             <div className="modal-footer">
-              <button className="save-btn" onClick={closeComingSoon}>OK</button>
+              <button className="save-btn" onClick={() => setIsContactOpen(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ====================== Suggestions Modal ====================== */}
+      {isSuggestionsOpen && (
+        <div className="modal-overlay">
+          <div className="modal">
+            <div className="modal-header">
+              <h2>Suggestions</h2>
+            </div>
+            <div className="modal-body">
+              {suggestionSubmitted ? (
+                <div style={{ textAlign: 'center', padding: '20px 10px' }}>
+                  <p style={{ fontSize: '16px', color: '#bffcff', fontWeight: 600 }}>
+                    Thank you for your suggestion!
+                  </p>
+                </div>
+              ) : (
+                <div className="input-group">
+                  <label style={{ marginBottom: '8px', display: 'block', color: '#a0d8d0', fontSize: '14px' }}>
+                    Share your feedback or suggestions:
+                  </label>
+                  <textarea
+                    rows="4"
+                    value={suggestionText}
+                    onChange={(e) => setSuggestionText(e.target.value)}
+                    placeholder="Type your suggestion here..."
+                    style={{
+                      width: '100%',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      border: '1px solid #58aeb0',
+                      borderRadius: '8px',
+                      color: '#fff',
+                      padding: '10px',
+                      fontSize: '14px',
+                      resize: 'none',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="cancel-btn" onClick={() => setIsSuggestionsOpen(false)}>
+                {suggestionSubmitted ? 'Close' : 'Cancel'}
+              </button>
+              {!suggestionSubmitted && (
+                <button
+                  className="save-btn"
+                  onClick={() => setSuggestionSubmitted(true)}
+                  disabled={!suggestionText.trim()}
+                >
+                  Submit
+                </button>
+              )}
             </div>
           </div>
         </div>
