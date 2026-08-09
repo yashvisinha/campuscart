@@ -5,6 +5,7 @@ import {
   Bell as BellIcon,
 } from "lucide-react";
 import { getUserId } from "../auth";
+import { API_BASE } from '../config.js';
 import "./messages.css";
 
 // Format timestamp to relative time like "2m", "1h", "Yesterday"
@@ -83,7 +84,7 @@ export default function Messages() {
       return;
     }
 
-    fetch(`/api/messages/chats/${currentUser}`)
+    fetch(`${API_BASE}/api/messages/chats/${currentUser}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) {

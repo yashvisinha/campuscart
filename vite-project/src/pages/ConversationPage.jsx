@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send } from 'lucide-react';
 import { getUserId } from '../auth';
+import { API_BASE } from '../config.js';
 import './ConversationPage.css';
 
 export default function ConversationPage() {
@@ -21,7 +22,7 @@ export default function ConversationPage() {
       return;
     }
 
-    fetch(`/api/messages/conversation/${currentUser}/${otherUserId}`)
+    fetch(`${API_BASE}/api/messages/conversation/${currentUser}/${otherUserId}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setMessages(data);
@@ -56,7 +57,7 @@ export default function ConversationPage() {
 
     // Then send to backend
     try {
-      await fetch('/api/messages', {
+      await fetch(`${API_BASE}/api/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

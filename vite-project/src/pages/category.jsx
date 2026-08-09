@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Settings as SettingsIcon, Bell as BellIcon, ArrowLeft, X as ClearIcon } from "lucide-react";
 import "./category.css";
+import { API_BASE } from '../config.js';
 
 function Header({ searchQuery, setSearchQuery }) {
   const navigate = useNavigate();
@@ -50,8 +51,8 @@ export default function Category() {
     const fetchProducts = async () => {
       try {
         const url = category
-          ? '/api/products?category_id=' + category.id
-          : '/api/products';
+          ? `${API_BASE}/api/products?category_id=` + category.id
+          : `${API_BASE}/api/products`;
         const res = await fetch(url);
         const data = await res.json();
         if (data && !data.error) setProducts(data);

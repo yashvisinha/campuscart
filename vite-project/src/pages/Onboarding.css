@@ -390,3 +390,64 @@
   width: 24px;
   background: #ffb3b0;
 }
+
+/* Responsive adjustment for shorter mobile screen heights */
+@media (max-height: 760px) {
+  .ob-visual {
+    height: 220px;
+    margin-bottom: 12px;
+  }
+  .ob-phone {
+    width: 140px;
+    height: 200px;
+    border-radius: 16px;
+    padding: 10px;
+  }
+  .ob-phone--list, .ob-phone--profile {
+    height: 180px;
+    border-radius: 20px;
+  }
+  .ob-notch {
+    margin: 2px auto 8px;
+  }
+  .ob-avatar {
+    width: 44px;
+    height: 44px;
+    margin: 4px auto 10px;
+  }
+  .ob-avatar svg {
+    width: 22px;
+    height: 22px;
+  }
+  .ob-list-item {
+    padding: 6px;
+    margin-bottom: 6px;
+    gap: 6px;
+  }
+  .ob-list-icon {
+    width: 24px;
+    height: 24px;
+  }
+  .ob-badge {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 8px;
+  }
+  .ob-badge svg {
+    width: 22px;
+    height: 22px;
+  }
+  .ob-heading {
+    font-size: 22px;
+    line-height: 28px;
+    margin-bottom: 4px;
+  }
+  .ob-description {
+    font-size: 13px;
+    line-height: 18px;
+  }
+  .onboarding-next-btn {
+    height: 48px;
+    font-size: 16px;
+  }
+}

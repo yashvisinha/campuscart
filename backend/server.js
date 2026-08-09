@@ -786,12 +786,13 @@ app.get("/api/auth/dauth/callback", async (req, res) => {
   }
 
   try {
+    const targetRedirectUri = process.env.DAUTH_REDIRECT_URI || "https://campuscart-frontend-92d1.onrender.com/auth/callback";
     const { userData, accessToken } = await exchangeDAuthCode(
       code,
-      process.env.DAUTH_REDIRECT_URI,
+      targetRedirectUri,
     );
 
-    const frontendCallback = new URL("http://localhost:5173/auth/callback");
+    const frontendCallback = new URL(targetRedirectUri);
     frontendCallback.searchParams.set("token", accessToken);
     frontendCallback.searchParams.set("user", JSON.stringify(userData));
 
