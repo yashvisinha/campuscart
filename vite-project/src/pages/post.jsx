@@ -6,6 +6,7 @@ import {
   ArrowUp,
 } from "lucide-react";
 import "./post.css";
+import { API_BASE } from '../config.js';
 
 const toBase64 = (file) =>
   new Promise((resolve, reject) => {
@@ -45,9 +46,19 @@ function PostPage() {
   }, [selectedImage]);
 
   useEffect(() => {
+    const savedAddress = localStorage.getItem('dauth_user_address');
+    const user = getUser();
+    const autofillLoc = savedAddress || user?.address || "OPAL-C 99W";
+    setFormData((current) => ({
+      ...current,
+      location: autofillLoc,
+    }));
+  }, []);
+
+  useEffect(() => {
     const loadCategories = async () => {
       try {
-        const response = await fetch("/api/categories");
+        const response = await fetch(`${API_BASE}/api/categories`);
         const data = await response.json();
         if (Array.isArray(data)) {
           setCategories(data);
@@ -92,7 +103,7 @@ function PostPage() {
       const base64Image = await toBase64(selectedImage);
 
       const currentUser = getUser();
-      const response = await fetch("/api/products", {
+      const response = await fetch(`${API_BASE}/api/products`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -211,16 +222,11 @@ function PostPage() {
               </select>
             </label>
 
-            <label className="field-row">
-              <span className="visually-hidden">Location</span>
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleFieldChange}
-                placeholder="Location"
-              />
-            </label>
+            <div className="field-row field-row-readonly">
+              <span className="readonly-label">Location:</span>
+              <span className="readonly-value">{formData.location || "OPAL-C 99W"}</span>
+              <span className="readonly-badge">Set in Settings</span>
+            </div>
 
             <label className="field-row field-row-textarea">
               <span className="visually-hidden">Details</span>

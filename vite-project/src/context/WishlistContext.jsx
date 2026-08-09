@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getUserId } from '../auth';
+import { API_BASE } from '../config.js';
 
 const WishlistContext = createContext(null);
 
@@ -12,7 +13,7 @@ export function WishlistProvider({ children }) {
     const currentUserId = getUserId();
     if (currentUserId) {
       try {
-        const res = await fetch(`/api/wishlist/${currentUserId}`);
+        const res = await fetch(`${API_BASE}/api/wishlist/${currentUserId}`);
         const data = await res.json();
         if (Array.isArray(data)) {
           setWishlist(data);
@@ -48,11 +49,11 @@ export function WishlistProvider({ children }) {
     if (currentUserId) {
       try {
         if (exists) {
-          await fetch(`/api/wishlist/${currentUserId}/${product.id}`, {
+          await fetch(`${API_BASE}/api/wishlist/${currentUserId}/${product.id}`, {
             method: 'DELETE',
           });
         } else {
-          await fetch('/api/wishlist', {
+          await fetch(`${API_BASE}/api/wishlist`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -75,7 +76,7 @@ export function WishlistProvider({ children }) {
 
     if (currentUserId && productId) {
       try {
-        await fetch(`/api/wishlist/${currentUserId}/${productId}`, {
+        await fetch(`${API_BASE}/api/wishlist/${currentUserId}/${productId}`, {
           method: 'DELETE',
         });
       } catch (err) {

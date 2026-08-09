@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Bell, ShoppingBag, CheckCircle, XCircle } from 'lucide-react';
 import { getUserId } from '../auth';
+import { API_BASE } from '../config.js';
 import './NotificationsPage.css';
 
 function formatTime(timestamp) {
@@ -36,8 +37,8 @@ export default function NotificationsPage() {
 
     try {
       const [notifRes, dealsRes] = await Promise.all([
-        fetch(`/api/notifications/${userId}`),
-        fetch(`/api/orders/user/${userId}`),
+        fetch(`${API_BASE}/api/notifications/${userId}`),
+        fetch(`${API_BASE}/api/orders/user/${userId}`),
       ]);
 
       const notifData = await notifRes.json();
@@ -64,7 +65,7 @@ export default function NotificationsPage() {
     setActionLoading((prev) => ({ ...prev, [orderId]: true }));
 
     try {
-      const res = await fetch(`/api/orders/${orderId}`, {
+      const res = await fetch(`${API_BASE}/api/orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),

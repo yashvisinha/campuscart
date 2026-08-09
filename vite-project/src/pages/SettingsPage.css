@@ -287,3 +287,20 @@
   font-size: 12px;
   color: #8a9292;
 }
+
+.settings-address-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(162, 207, 206, 0.4);
+  border-radius: 12px;
+  color: #fff;
+  padding: 10px 14px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.settings-address-input:focus {
+  border-color: #a2cfce;
+}

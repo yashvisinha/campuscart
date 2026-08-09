@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ShoppingCart, Heart } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Heart, Flag } from 'lucide-react';
 import './ProductPage.css';
 import { useWishlist } from '../context/WishlistContext';
 import { getUserId } from '../auth';
+import { API_BASE } from '../config.js';
 
 const ProductPage = () => {
   const navigate = useNavigate();
@@ -18,6 +19,13 @@ const ProductPage = () => {
   const [buyMessage, setBuyMessage] = useState('');
   const [buyError, setBuyError] = useState('');
 
+  // Report Modal State
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState('');
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportSuccess, setReportSuccess] = useState(false);
+  const [reportError, setReportError] = useState('');
+
   const currentUserId = getUserId();
 
   useEffect(() => {
@@ -27,7 +35,7 @@ const ProductPage = () => {
         return;
       }
       try {
-        const res = await fetch('/api/products/' + productId);
+        const res = await fetch(`${API_BASE}/api/products/` + productId);
         const data = await res.json();
         if (data && !data.error) setProduct(data);
       } catch (err) {
@@ -68,7 +76,7 @@ const ProductPage = () => {
     setBuying(true);
 
     try {
-      const res = await fetch('/api/orders', {
+      const res = await fetch(`${API_BASE}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -88,6 +96,60 @@ const ProductPage = () => {
       setBuyError(err.message || 'Unable to buy product.');
     } finally {
       setBuying(false);
+    }
+  };
+
+  const openReportModal = () => {
+    setReportReason('');
+    setReportError('');
+    setReportSuccess(false);
+    setIsReportModalOpen(true);
+  };
+
+  const closeReportModal = () => {
+    setIsReportModalOpen(false);
+    setReportReason('');
+    setReportError('');
+    setReportSuccess(false);
+  };
+
+  const handleReportSubmit = async () => {
+    if (!reportReason.trim()) return;
+    setReportError('');
+    setReportSubmitting(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/reports`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sender_id: currentUserId || null,
+          product_id: product?.id,
+          product_name: product?.name,
+          reason: reportReason.trim(),
+        }),
+      });
+
+      let data;
+      try {
+        data = await res.json();
+      } catch (parseErr) {
+        const text = await res.text().catch(() => '');
+        throw new Error(text || 'Server returned an unexpected response. Please ensure the backend server is running.');
+      }
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to submit report.');
+      }
+
+      setReportSuccess(true);
+      setTimeout(() => {
+        closeReportModal();
+      }, 1600);
+    } catch (err) {
+      setReportError(err.message || 'Unable to submit report.');
+    } finally {
+      setReportSubmitting(false);
     }
   };
 
@@ -172,6 +234,12 @@ const ProductPage = () => {
           <h3 className="pp-section-title">Description</h3>
           <p className="pp-description">{product.description || 'No description available.'}</p>
 
+          <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'flex-end' }}>
+            <button className="pp-report-btn" onClick={openReportModal}>
+              <Flag size={14} /> Report Listing
+            </button>
+          </div>
+
           {buyError && <p style={{ color: '#ff4757', marginTop: '12px', fontSize: '14px' }}>{buyError}</p>}
           {buyMessage && <p style={{ color: '#2ed573', marginTop: '12px', fontSize: '14px' }}>{buyMessage}</p>}
 
@@ -193,6 +261,62 @@ const ProductPage = () => {
           </div>
         </div>
       </div>
+
+      {/* ====================== Report Product Modal ====================== */}
+      {isReportModalOpen && (
+        <div className="pp-modal-overlay">
+          <div className="pp-modal">
+            <div className="pp-modal-header">
+              <h2>Report Product</h2>
+            </div>
+            <div className="pp-modal-body">
+              {reportSuccess ? (
+                <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                  <p style={{ color: '#bffcff', fontSize: '15px', fontWeight: 600 }}>
+                    Thank you! Your report has been submitted.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <p className="pp-modal-subtitle">
+                    Please describe the issue or reason for reporting <strong>"{product?.name}"</strong>:
+                  </p>
+                  <textarea
+                    className="pp-report-textarea"
+                    rows="4"
+                    value={reportReason}
+                    onChange={(e) => setReportReason(e.target.value)}
+                    placeholder="e.g. Inappropriate item, misleading description, fake listing..."
+                  />
+                  {reportError && (
+                    <p style={{ color: '#ff4757', marginTop: '8px', fontSize: '13px' }}>
+                      {reportError}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+            <div className="pp-modal-footer">
+              <button
+                className="pp-modal-cancel-btn"
+                onClick={closeReportModal}
+                disabled={reportSubmitting}
+              >
+                {reportSuccess ? 'Close' : 'Cancel'}
+              </button>
+              {!reportSuccess && (
+                <button
+                  className="pp-modal-submit-btn"
+                  onClick={handleReportSubmit}
+                  disabled={!reportReason.trim() || reportSubmitting}
+                >
+                  {reportSubmitting ? 'Submitting...' : 'Submit Report'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

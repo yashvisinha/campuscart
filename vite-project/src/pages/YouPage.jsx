@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Settings as SettingsIcon, Bell as BellIcon, Edit2, Heart, X, Trash2 } from 'lucide-react';
 import { getUserId, getUser } from '../auth';
 import { useWishlist } from '../context/WishlistContext';
+import { API_BASE } from '../config.js';
 import './home.css';
 import './YouPage.css';
 
@@ -36,7 +37,7 @@ export default function YouPage() {
     }
 
     try {
-      const res = await fetch(`/api/users/${userId}/products`);
+      const res = await fetch(`${API_BASE}/api/users/${userId}/products`);
       if (res.ok) {
         const data = await res.json();
         setMyListings(data || []);
@@ -50,7 +51,7 @@ export default function YouPage() {
 
   const loadCategories = async () => {
     try {
-      const res = await fetch('/api/categories');
+      const res = await fetch(`${API_BASE}/api/categories`);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) setCategories(data);
@@ -98,7 +99,7 @@ export default function YouPage() {
     setEditError('');
 
     try {
-      const res = await fetch(`/api/products/${editingProduct.id}`, {
+      const res = await fetch(`${API_BASE}/api/products/${editingProduct.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

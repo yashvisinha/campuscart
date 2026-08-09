@@ -252,3 +252,147 @@
   background: #ffb3b0;
   color: #68000f;
 }
+
+/* Report Button */
+.pp-report-btn {
+  background: transparent;
+  border: none;
+  color: #8a9292;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.pp-report-btn:hover {
+  color: #ff686b;
+  background: rgba(255, 104, 107, 0.1);
+}
+
+/* Report Modal Styles */
+.pp-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.pp-modal {
+  background: #184849;
+  border: 1px solid rgba(162, 207, 206, 0.2);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 440px;
+  overflow: hidden;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  animation: ppModalFadeIn 0.2s ease-out;
+}
+
+@keyframes ppModalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.pp-modal-header {
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pp-modal-header h2 {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-size: 18px;
+  color: #fff;
+  margin: 0;
+}
+
+.pp-modal-body {
+  padding: 20px 24px;
+}
+
+.pp-modal-subtitle {
+  font-size: 14px;
+  color: #c0c8c7;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.pp-report-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(162, 207, 206, 0.3);
+  border-radius: 12px;
+  color: #fff;
+  padding: 12px;
+  font-size: 14px;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  resize: none;
+  transition: border-color 0.2s ease;
+}
+
+.pp-report-textarea:focus {
+  border-color: #a2cfce;
+}
+
+.pp-modal-footer {
+  padding: 14px 24px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pp-modal-cancel-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #c0c8c7;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.pp-modal-cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.pp-modal-submit-btn {
+  background: #ff686b;
+  border: none;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.pp-modal-submit-btn:hover {
+  opacity: 0.9;
+}
+
+.pp-modal-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

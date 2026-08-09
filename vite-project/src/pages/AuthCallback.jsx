@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { API_BASE } from '../config.js';
 
 export default function AuthCallback() {
   const [searchParams] = useSearchParams();
@@ -51,7 +52,7 @@ export default function AuthCallback() {
       try {
         const redirectUri = `${window.location.origin}/auth/callback`;
 
-        const res = await fetch("/api/auth/dauth/callback", {
+        const res = await fetch(`${API_BASE}/api/auth/dauth/callback`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code, state, redirectUri }),
