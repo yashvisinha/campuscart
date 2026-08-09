@@ -175,6 +175,21 @@ function Onboarding() {
     }
   };
 
+  const isLocal = typeof window !== 'undefined' && (
+    window.location.hostname === 'localhost' || 
+    window.location.hostname === '127.0.0.1'
+  );
+
+  const handleBypassLogin = () => {
+    localStorage.setItem("dauth_user", JSON.stringify({
+      name: "Test User",
+      email: "106125040@nitt.edu",
+      rollNumber: "106125040"
+    }));
+    localStorage.setItem("dauth_token", "mock_token_local_dev");
+    navigate("/home");
+  };
+
   const handleNext = () => {
     if (isLastSlide) {
       handleLaunchDAuth();
@@ -182,6 +197,7 @@ function Onboarding() {
       setCurrent(current + 1);
     }
   };
+
 
   return (
     <div className="onboarding-screen">
@@ -207,9 +223,30 @@ function Onboarding() {
           <ArrowRight size={20} />
         </button>
 
+        {isLastSlide && isLocal && (
+          <button
+            onClick={handleBypassLogin}
+            style={{
+              background: "rgba(255, 255, 255, 0.05)",
+              color: "#aaa",
+              border: "1px dashed #666",
+              width: "100%",
+              padding: "12px",
+              borderRadius: "12px",
+              fontSize: "14px",
+              fontWeight: "500",
+              cursor: "pointer",
+              marginTop: "12px",
+            }}
+          >
+            Bypass Login (Local Dev Only)
+          </button>
+        )}
+
         {error && (
           <div className="onboarding-error">{error}</div>
         )}
+
 
         <div className="onboarding-dots">
           {slides.map((s, i) => (

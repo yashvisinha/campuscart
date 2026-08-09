@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./login.css";
 import { API_BASE } from '../config.js';
 
@@ -6,7 +7,23 @@ import { API_BASE } from '../config.js';
 export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
   const redirectUri = `${window.location.origin}/auth/callback`;
+
+  const isLocal = typeof window !== 'undefined' && (
+    window.location.hostname === 'localhost' || 
+    window.location.hostname === '127.0.0.1'
+  );
+
+  const handleBypassLogin = () => {
+    localStorage.setItem("dauth_user", JSON.stringify({
+      name: "Test User",
+      email: "106125040@nitt.edu",
+      rollNumber: "106125040"
+    }));
+    localStorage.setItem("dauth_token", "mock_token_local_dev");
+    navigate("/home");
+  };
 
   const handleDAuthLogin = async () => {
     try {
@@ -74,7 +91,28 @@ export default function Login() {
         >
           {loading ? "Redirecting..." : "Login with DAuth"}
         </button>
+
+        {isLocal && (
+          <button
+            onClick={handleBypassLogin}
+            style={{
+              background: "rgba(255, 255, 255, 0.05)",
+              color: "#aaa",
+              border: "1px dashed #666",
+              width: "100%",
+              padding: "12px",
+              borderRadius: "12px",
+              fontSize: "14px",
+              fontWeight: "500",
+              cursor: "pointer",
+              marginTop: "12px",
+            }}
+          >
+            Bypass Login (Local Dev Only)
+          </button>
+        )}
       </div>
     </div>
   );
 }
+
