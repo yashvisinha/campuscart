@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
 export default function AuthCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -51,7 +53,7 @@ export default function AuthCallback() {
       try {
         const redirectUri = `${window.location.origin}/auth/callback`;
 
-        const res = await fetch("/api/auth/dauth/callback", {
+        const res = await fetch(`${API_BASE}/api/auth/dauth/callback`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ code, state, redirectUri }),

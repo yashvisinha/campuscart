@@ -1,6 +1,8 @@
 import { useState } from "react";
 import "./login.css";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
 export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -12,7 +14,7 @@ export default function Login() {
       setError(null);
 
       const res = await fetch(
-        `/api/auth/dauth/url?redirectUri=${encodeURIComponent(redirectUri)}`,
+        `${API_BASE}/api/auth/dauth/url?redirectUri=${encodeURIComponent(redirectUri)}`,
       );
       const data = await res.json();
 

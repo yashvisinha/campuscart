@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Search, BookOpen, Headphones, Shirt, ArrowRight, Compass, ShoppingBag, MessageCircle, User, Lock, ShieldCheck, CreditCard, MessageSquare, ShieldQuestion } from 'lucide-react';
 import './Onboarding.css';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+
 const slides = [
   {
     key: 'discover',
@@ -154,7 +156,7 @@ function Onboarding() {
     try {
       const redirectUri = `${window.location.origin}/auth/callback`;
       const res = await fetch(
-        `/api/auth/dauth/url?redirectUri=${encodeURIComponent(redirectUri)}`,
+        `${API_BASE}/api/auth/dauth/url?redirectUri=${encodeURIComponent(redirectUri)}`,
       );
       const data = await res.json();
 
