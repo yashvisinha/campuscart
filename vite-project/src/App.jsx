@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
-import { isAuthenticated } from './auth';
+import { isAuthenticated, getUserId } from './auth';
 import {
   Home as HomeIcon,
   ShoppingCart as ShoppingCartIcon,
@@ -28,13 +28,40 @@ import { WishlistProvider } from './context/WishlistContext';
 // Bottom navigation component
 function BottomNav() {
   const navigate = useNavigate();
+  const [hasUnreadMsg, setHasUnreadMsg] = useState(false);
+  const userId = getUserId();
+
+  useEffect(() => {
+    if (!userId) return;
+
+    fetch(`/api/messages/chats/${userId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setHasUnreadMsg(data.some((c) => c.unread));
+        }
+      })
+      .catch(() => {});
+  }, [userId]);
 
   return (
     <nav className="bottom-nav">
       <button className="nav-icon" onClick={() => navigate('/home')} aria-label="Home"><HomeIcon /></button>
       <button className="nav-icon" onClick={() => navigate('/wishlist')} aria-label="Wishlist"><ShoppingCartIcon /></button>
       <button className="nav-icon" onClick={() => navigate('/post')} aria-label="Plus"><PlusIcon /></button>
-      <button className="nav-icon" onClick={() => navigate('/messages')} aria-label="Messages"><MessageCircleIcon /></button>
+      <button className="nav-icon" onClick={() => navigate('/messages')} aria-label="Messages" style={{ position: 'relative' }}>
+        <MessageCircleIcon />
+        {hasUnreadMsg && (
+          <span style={{
+            position: 'absolute',
+            top: 4, right: 4,
+            width: 8, height: 8,
+            borderRadius: '50%',
+            background: '#ff686b',
+            border: '2px solid #e9d1bc',
+          }} />
+        )}
+      </button>
       <button className="nav-icon" onClick={() => navigate('/you')} aria-label="Profile"><UserIcon /></button>
     </nav>
   );

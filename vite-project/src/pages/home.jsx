@@ -5,10 +5,26 @@ import {
   Bell as BellIcon,
   X as ClearIcon,
 } from "lucide-react";
+import { getUserId } from "../auth";
 import "./home.css";
 
 function Header({ searchQuery, setSearchQuery, onClearSearch }) {
   const navigate = useNavigate();
+  const [hasUnreadNotif, setHasUnreadNotif] = useState(false);
+  const userId = getUserId();
+
+  useEffect(() => {
+    if (!userId) return;
+
+    fetch(`/api/notifications/${userId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setHasUnreadNotif(data.some((n) => n.status === 'unread'));
+        }
+      })
+      .catch(() => {});
+  }, [userId]);
 
   return (
     <header className="topbar">
@@ -37,8 +53,18 @@ function Header({ searchQuery, setSearchQuery, onClearSearch }) {
         )}
       </div>
 
-      <button className="icon-btn" aria-label="notifications" onClick={() => navigate('/notifications')}>
+      <button className="icon-btn" aria-label="notifications" onClick={() => navigate('/notifications')} style={{ position: 'relative' }}>
         <BellIcon size={22} />
+        {hasUnreadNotif && (
+          <span style={{
+            position: 'absolute',
+            top: 6, right: 6,
+            width: 8, height: 8,
+            borderRadius: '50%',
+            background: '#ff686b',
+            border: '2px solid #134141',
+          }} />
+        )}
       </button>
     </header>
   );
