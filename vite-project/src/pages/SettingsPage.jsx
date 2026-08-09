@@ -14,6 +14,7 @@ function SettingsPage() {
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
   const [suggestionText, setSuggestionText] = useState("");
   const [suggestionSubmitted, setSuggestionSubmitted] = useState(false);
+  const [suggestionSubmitting, setSuggestionSubmitting] = useState(false);
 
   const [userName, setUserName] = useState("Your Name");
   const [address, setAddress] = useState("OPAL-C 99W");
@@ -81,6 +82,43 @@ function SettingsPage() {
     setIsEditOpen(false);
   };
 
+  const handleSuggestionSubmit = async () => {
+    if (!suggestionText.trim()) return;
+    setSuggestionSubmitting(true);
+    try {
+      let userId = null;
+      let userNameVal = null;
+      const storedUser = localStorage.getItem('dauth_user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        userId = user.id || user.userId || null;
+        userNameVal = user.name || null;
+      }
+
+      const res = await fetch('/api/suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          user_name: userNameVal,
+          suggestion: suggestionText.trim(),
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to submit suggestion');
+      }
+
+      setSuggestionSubmitted(true);
+    } catch (err) {
+      console.error('Suggestion submit error:', err);
+      alert(err.message || 'Failed to submit suggestion. Please try again.');
+    } finally {
+      setSuggestionSubmitting(false);
+    }
+  };
+
   return (
     <div className="settings-container">
       {/* Header */}
@@ -113,7 +151,7 @@ function SettingsPage() {
           <ArrowRight size={22} />
         </div>
         <div className="menu-item" onClick={() => setIsContactOpen(true)}>
-          <span>Contact Us</span>
+          <span>About</span>
           <ArrowRight size={22} />
         </div>
         <div className="menu-item" onClick={() => { setSuggestionText(""); setSuggestionSubmitted(false); setIsSuggestionsOpen(true); }}>
@@ -185,7 +223,7 @@ function SettingsPage() {
                 For queries or assistance, email us at:
               </p>
               <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#bffcff' }}>
-                abs@gmail.com
+                campuscartexec@gmail.com
               </p>
             </div>
             <div className="modal-footer">
@@ -200,14 +238,14 @@ function SettingsPage() {
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>Contact Us</h2>
+              <h2>About</h2>
             </div>
             <div className="modal-body" style={{ textAlign: 'center', padding: '30px 20px' }}>
               <p style={{ fontSize: '15px', color: '#a0d8d0', marginBottom: '8px' }}>
-                You can reach us at:
+                A student-developed project by:
               </p>
               <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#bffcff' }}>
-                +91 98765 43210
+                Yashvi, Hiba & Joliene
               </p>
             </div>
             <div className="modal-footer">
@@ -263,10 +301,10 @@ function SettingsPage() {
               {!suggestionSubmitted && (
                 <button
                   className="save-btn"
-                  onClick={() => setSuggestionSubmitted(true)}
-                  disabled={!suggestionText.trim()}
+                  onClick={handleSuggestionSubmit}
+                  disabled={!suggestionText.trim() || suggestionSubmitting}
                 >
-                  Submit
+                  {suggestionSubmitting ? 'Submitting...' : 'Submit'}
                 </button>
               )}
             </div>
@@ -277,4 +315,4 @@ function SettingsPage() {
   );
 }
 
-export default SettingsPage;
+export default SettingsPage;

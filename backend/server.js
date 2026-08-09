@@ -895,6 +895,62 @@ app.post("/api/messages", async (req, res) => {
   if (error) return res.status(500).json({ error: error.message });
   res.json(data);
 });
+// ─── SUGGESTIONS API ──────────────────────────────────────────────────
+
+// POST /api/suggestions — save user suggestion to database
+app.post("/api/suggestions", async (req, res) => {
+  const { user_id, user_name, suggestion } = req.body;
+
+  if (!suggestion || !suggestion.trim()) {
+    return res.status(400).json({ error: "Suggestion text is required." });
+  }
+
+  const suggestionText = suggestion.trim();
+  const senderId = user_id ? String(user_id) : null;
+
+  try {
+    // 1. Try table "Suggestions" (Capital S) with columns content & sender_id
+    let payload = { content: suggestionText };
+    if (senderId) payload.sender_id = senderId;
+
+    let { data, error } = await dbClient
+      .from("Suggestions")
+      .insert(payload)
+      .select();
+
+    // 2. Fallback: try lowercase "suggestions" if "Suggestions" doesn't exist
+    if (error && error.code === "PGRST205") {
+      const fallbackPayload = {
+        suggestion: suggestionText,
+        user_id: senderId,
+        user_name: user_name || null,
+      };
+      const fallbackRes = await dbClient
+        .from("suggestions")
+        .insert(fallbackPayload)
+        .select();
+
+      data = fallbackRes.data;
+      error = fallbackRes.error;
+    }
+
+    if (error) {
+      console.error("Suggestion insert error:", error);
+      if (error.code === "42501") {
+        return res.status(403).json({
+          error:
+            'Supabase Row Level Security (RLS) is blocking inserts into table "Suggestions". Please disable RLS on table "Suggestions" in Supabase Dashboard (or add an INSERT policy for anon/authenticated roles).',
+        });
+      }
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.status(201).json({ suggestion: Array.isArray(data) ? data[0] : data });
+  } catch (err) {
+    console.error("Suggestion API exception:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.listen(port, () => {
   console.log(`Backend server running on http://localhost:${port}`);

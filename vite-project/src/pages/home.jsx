@@ -252,7 +252,7 @@ export default function Home() {
   }, [searchQuery]);
 
   return (
-    <>
+    <div className="home-page">
       <Header
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -266,6 +266,6 @@ export default function Home() {
           <RandomElements products={products} />
         </>
       )}
-    </>
+    </div>
   );
 }

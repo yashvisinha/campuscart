@@ -4,6 +4,13 @@
   --nav-bg: #F5F5F1;
 }
 
+.home-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -126,6 +133,7 @@
 .hero {
   padding: 20px 20px 0;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .hero-title {
@@ -254,6 +262,9 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
   padding: 0 20px 40px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .random-column-wrapper {
@@ -308,10 +319,10 @@
 
 @keyframes scroll-down {
   0% {
-    transform: translateY(0);
+    transform: translateY(-50%);
   }
   100% {
-    transform: translateY(-50%);
+    transform: translateY(0);
   }
 }
 
@@ -320,6 +331,6 @@
     transform: translateY(0);
   }
   100% {
-    transform: translateY(50%);
+    transform: translateY(-50%);
   }
 }
