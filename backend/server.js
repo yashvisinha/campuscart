@@ -953,6 +953,44 @@ app.post("/api/suggestions", async (req, res) => {
   }
 });
 
+// POST /api/reports — save product report to Supabase "reports" table
+app.post("/api/reports", async (req, res) => {
+  const { sender_id, product_id, product_name, reason } = req.body;
+
+  if (!reason || !reason.trim()) {
+    return res.status(400).json({ error: "Report reason is required." });
+  }
+
+  const senderId = sender_id ? String(sender_id) : "Anonymous";
+  const reportContent = `Product ID: ${product_id || 'Unknown'} (${product_name || 'Item'})\nReason: ${reason.trim()}`;
+
+  try {
+    const { data, error } = await dbClient
+      .from("reports")
+      .insert({
+        sender_id: senderId,
+        report: reportContent,
+      })
+      .select();
+
+    if (error) {
+      console.error("Report insert error:", error);
+      if (error.code === "42501") {
+        return res.status(403).json({
+          error:
+            'Supabase Row Level Security (RLS) is blocking inserts into table "reports". Please disable RLS on table "reports" in Supabase Dashboard (or add an INSERT policy).',
+        });
+      }
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.status(201).json({ report: Array.isArray(data) ? data[0] : data });
+  } catch (err) {
+    console.error("Report API exception:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Backend server running on http://localhost:${port}`);
 });
