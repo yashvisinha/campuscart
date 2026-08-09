@@ -148,11 +148,25 @@ function RandomElements({ products }) {
   const navigate = useNavigate();
   if (!products || products.length === 0) return null;
 
+  const leftProducts = products.filter((_, idx) => idx % 2 === 0);
+  const rightProducts = products.filter((_, idx) => idx % 2 === 1);
+
   return (
     <section className="random-marquee" aria-label="Products">
-      {products.map((p) => (
-        <ProductTile key={p.id} product={p} navigate={navigate} />
-      ))}
+      <div className="random-column-wrapper">
+        <div className="random-column random-column--left">
+          {[...leftProducts, ...leftProducts].map((p, idx) => (
+            <ProductTile key={`${p.id}-left-${idx}`} product={p} navigate={navigate} />
+          ))}
+        </div>
+      </div>
+      <div className="random-column-wrapper">
+        <div className="random-column random-column--right random-column--offset">
+          {[...rightProducts, ...rightProducts].map((p, idx) => (
+            <ProductTile key={`${p.id}-right-${idx}`} product={p} navigate={navigate} />
+          ))}
+        </div>
+      </div>
     </section>
   );
 }
@@ -173,7 +187,7 @@ function SearchResults({ results, searching, query }) {
           No available products found matching "{query}"
         </p>
       ) : (
-        <div style={{ columns: 2, columnGap: '16px' }}>
+        <div className="search-results-grid">
           {results.map((product) => (
             <ProductTile key={product.id} product={product} navigate={navigate} />
           ))}
