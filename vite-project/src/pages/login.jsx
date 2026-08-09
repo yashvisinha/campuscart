@@ -4,7 +4,7 @@ import "./login.css";
 export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const redirectUri = "http://localhost:5173/auth/callback";
+  const redirectUri = `${window.location.origin}/auth/callback`;
 
   const handleDAuthLogin = async () => {
     try {
