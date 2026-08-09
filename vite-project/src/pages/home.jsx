@@ -6,6 +6,7 @@ import {
   X as ClearIcon,
 } from "lucide-react";
 import "./home.css";
+import { API_BASE } from '../config.js';
 
 function Header({ searchQuery, setSearchQuery, onClearSearch }) {
   const navigate = useNavigate();
@@ -207,14 +208,14 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const catRes = await fetch('/api/categories');
+        const catRes = await fetch(`${API_BASE}/api/categories`);
         const catData = await catRes.json();
         if (catData && !catData.error) {
           const seen = new Set();
           setCategories(catData.filter(c => seen.has(c.id) ? false : seen.add(c.id)));
         }
 
-        const prodRes = await fetch('/api/products');
+        const prodRes = await fetch(`${API_BASE}/api/products`);
         const prodData = await prodRes.json();
         if (prodData && !prodData.error) {
           const seen = new Set();
@@ -236,7 +237,7 @@ export default function Home() {
 
     setSearching(true);
     const timer = setTimeout(() => {
-      fetch(`/api/products/search?q=${encodeURIComponent(searchQuery.trim())}`)
+      fetch(`${API_BASE}/api/products/search?q=${encodeURIComponent(searchQuery.trim())}`)
         .then((res) => res.json())
         .then((data) => {
           if (Array.isArray(data)) setSearchResults(data);

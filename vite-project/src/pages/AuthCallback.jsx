@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+import { API_BASE } from '../config.js';
 
 export default function AuthCallback() {
   const [searchParams] = useSearchParams();

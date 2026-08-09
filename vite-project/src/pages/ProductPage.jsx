@@ -4,6 +4,7 @@ import { ArrowLeft, ShoppingCart, Heart } from 'lucide-react';
 import './ProductPage.css';
 import { useWishlist } from '../context/WishlistContext';
 import { getUserId } from '../auth';
+import { API_BASE } from '../config.js';
 
 const ProductPage = () => {
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ const ProductPage = () => {
         return;
       }
       try {
-        const res = await fetch('/api/products/' + productId);
+        const res = await fetch(`${API_BASE}/api/products/` + productId);
         const data = await res.json();
         if (data && !data.error) setProduct(data);
       } catch (err) {
@@ -68,7 +69,7 @@ const ProductPage = () => {
     setBuying(true);
 
     try {
-      const res = await fetch('/api/orders', {
+      const res = await fetch(`${API_BASE}/api/orders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

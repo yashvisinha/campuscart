@@ -1,7 +1,7 @@
 import { useState } from "react";
 import "./login.css";
+import { API_BASE } from '../config.js';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 export default function Login() {
   const [loading, setLoading] = useState(false);

@@ -6,6 +6,7 @@ import {
   ArrowUp,
 } from "lucide-react";
 import "./post.css";
+import { API_BASE } from '../config.js';
 
 const toBase64 = (file) =>
   new Promise((resolve, reject) => {
@@ -47,7 +48,7 @@ function PostPage() {
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        const response = await fetch("/api/categories");
+        const response = await fetch(`${API_BASE}/api/categories`);
         const data = await response.json();
         if (Array.isArray(data)) {
           setCategories(data);
@@ -92,7 +93,7 @@ function PostPage() {
       const base64Image = await toBase64(selectedImage);
 
       const currentUser = getUser();
-      const response = await fetch("/api/products", {
+      const response = await fetch(`${API_BASE}/api/products`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

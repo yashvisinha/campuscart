@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, BookOpen, Headphones, Shirt, ArrowRight, Compass, ShoppingBag, MessageCircle, User, Lock, ShieldCheck, CreditCard, MessageSquare, ShieldQuestion } from 'lucide-react';
 import './Onboarding.css';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
+import { API_BASE } from '../config.js';
 
 const slides = [
   {
