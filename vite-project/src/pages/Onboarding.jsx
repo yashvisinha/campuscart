@@ -15,7 +15,7 @@ const slides = [
       <div className="ob-visual">
         <div className="ob-phone ob-phone--search">
           <div className="ob-search-bar">
-            <Search size={16} />
+            <Search size={20} />
             <div className="ob-search-line" />
           </div>
           <div className="ob-grid">

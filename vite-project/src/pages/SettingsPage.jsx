@@ -20,17 +20,27 @@ function SettingsPage() {
   const [address, setAddress] = useState("OPAL-C 99W");
   const [profilePic, setProfilePic] = useState(pfpDefault);
   const [tempPfp, setTempPfp] = useState(null);
+  const [tempAddress, setTempAddress] = useState("");
   const [selectedFileName, setSelectedFileName] = useState("");
 
-  // Load user data from DAuth local session & saved PFP
+  // Load user data from DAuth local session, saved address & saved PFP
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem('dauth_user');
+      const savedAddress = localStorage.getItem('dauth_user_address');
+      
+      if (savedAddress) {
+        setAddress(savedAddress);
+      } else if (storedUser) {
+        const user = JSON.parse(storedUser);
+        if (user.address) setAddress(user.address);
+      }
+
       if (storedUser) {
         const user = JSON.parse(storedUser);
         if (user.name) setUserName(user.name);
-        if (user.email) setAddress(user.email);
       }
+
       const savedPfp = localStorage.getItem('dauth_user_pfp');
       if (savedPfp) {
         setProfilePic(savedPfp);
@@ -46,14 +56,16 @@ function SettingsPage() {
     navigate('/login');
   };
 
-  // Edit Profile Picture
+  // Edit Profile (Pfp and Address)
   const openEditModal = () => {
     setTempPfp(null);
+    setTempAddress(address);
     setSelectedFileName("");
     setIsEditOpen(true);
   };
   const closeEditModal = () => {
     setTempPfp(null);
+    setTempAddress("");
     setSelectedFileName("");
     setIsEditOpen(false);
   };
@@ -70,13 +82,28 @@ function SettingsPage() {
     }
   };
 
-  const savePfpChanges = () => {
+  const saveProfileChanges = () => {
     if (tempPfp) {
       setProfilePic(tempPfp);
       try {
         localStorage.setItem('dauth_user_pfp', tempPfp);
       } catch (err) {
         console.error('Failed to save profile picture to localStorage:', err);
+      }
+    }
+    if (tempAddress.trim()) {
+      const updatedAddress = tempAddress.trim();
+      setAddress(updatedAddress);
+      try {
+        localStorage.setItem('dauth_user_address', updatedAddress);
+        const storedUser = localStorage.getItem('dauth_user');
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          user.address = updatedAddress;
+          localStorage.setItem('dauth_user', JSON.stringify(user));
+        }
+      } catch (err) {
+        console.error('Failed to save address to localStorage:', err);
       }
     }
     setIsEditOpen(false);
@@ -166,16 +193,19 @@ function SettingsPage() {
         Logout
       </button>
 
-      {/* ====================== Edit Profile Picture Modal ====================== */}
+      {/* ====================== Edit Profile Modal ====================== */}
       {isEditOpen && (
         <div className="modal-overlay">
           <div className="modal">
             <div className="modal-header">
-              <h2>Edit Profile Picture</h2>
+              <h2>Edit Profile</h2>
             </div>
 
             <div className="modal-body">
               <div className="input-group">
+                <label style={{ display: 'block', marginBottom: '8px', color: '#a0d8d0', fontSize: '14px', fontWeight: 500 }}>
+                  Profile Picture
+                </label>
                 <div className="file-input">
                   <button className="choose-file-btn" onClick={() => document.getElementById('pfp-input').click()}>
                     Choose File
@@ -200,12 +230,27 @@ function SettingsPage() {
                 />
               </div>
 
-              <p className="note">Other details are fetched from DAuth and cannot be changed manually.</p>
+              <div className="input-group" style={{ marginTop: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', color: '#a0d8d0', fontSize: '14px', fontWeight: 500 }}>
+                  Address / Hostel Location
+                </label>
+                <input
+                  type="text"
+                  className="settings-address-input"
+                  value={tempAddress}
+                  onChange={(e) => setTempAddress(e.target.value)}
+                  placeholder="e.g. OPAL-C 99W"
+                />
+              </div>
+
+              <p className="note" style={{ marginTop: '16px' }}>
+                Name and email are fetched from DAuth. You can edit your address and profile picture.
+              </p>
             </div>
 
             <div className="modal-footer">
               <button className="cancel-btn" onClick={closeEditModal}>Cancel</button>
-              <button className="save-btn" onClick={savePfpChanges}>Save Changes</button>
+              <button className="save-btn" onClick={saveProfileChanges}>Save Changes</button>
             </div>
           </div>
         </div>

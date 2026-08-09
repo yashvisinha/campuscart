@@ -46,6 +46,16 @@ function PostPage() {
   }, [selectedImage]);
 
   useEffect(() => {
+    const savedAddress = localStorage.getItem('dauth_user_address');
+    const user = getUser();
+    const autofillLoc = savedAddress || user?.address || "OPAL-C 99W";
+    setFormData((current) => ({
+      ...current,
+      location: autofillLoc,
+    }));
+  }, []);
+
+  useEffect(() => {
     const loadCategories = async () => {
       try {
         const response = await fetch(`${API_BASE}/api/categories`);
@@ -212,16 +222,11 @@ function PostPage() {
               </select>
             </label>
 
-            <label className="field-row">
-              <span className="visually-hidden">Location</span>
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleFieldChange}
-                placeholder="Location"
-              />
-            </label>
+            <div className="field-row field-row-readonly">
+              <span className="readonly-label">Location:</span>
+              <span className="readonly-value">{formData.location || "OPAL-C 99W"}</span>
+              <span className="readonly-badge">Set in Settings</span>
+            </div>
 
             <label className="field-row field-row-textarea">
               <span className="visually-hidden">Details</span>

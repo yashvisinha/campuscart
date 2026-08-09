@@ -42,7 +42,11 @@
 
 .search-mark {
   color: #a2cfce;
-  font-size: 14px;
+  font-size: 20px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .search-pill input {
