@@ -7,7 +7,27 @@ import {
 } from "lucide-react";
 import { getUserId } from "../auth";
 import "./home.css";
-import { API_BASE } from '../config.js';
+
+import fresherKitsImg from '../assets/fresherskit.png';
+import collegeEssentialsImg from '../assets/collegeessentials.png';
+import othersImg from '../assets/others.png';
+import snacksImg from '../assets/snacks.png';
+import clothesImg from '../assets/cloths.png';
+import accessoriesImg from '../assets/accesories.png';
+
+const categoryImageMap = {
+  "fresher's items": fresherKitsImg,
+  "college essentials": collegeEssentialsImg,
+  "other": othersImg,
+  "snacks": snacksImg,
+  "clothes": clothesImg,
+  "accessories": accessoriesImg,
+};
+
+function getCategoryImage(categoryName) {
+  if (!categoryName) return null;
+  return categoryImageMap[categoryName.toLowerCase()] || null;
+}
 
 function Header({ searchQuery, setSearchQuery, onClearSearch }) {
   const navigate = useNavigate();
@@ -88,25 +108,52 @@ function Categories({ categories }) {
     setActiveIndex((i) => (i + 1) % categories.length);
   }
 
+  const prevImg = getCategoryImage(previousCategory?.name);
+  const currImg = getCategoryImage(currentCategory?.name);
+  const nextImg = getCategoryImage(nextCategory?.name);
+
   return (
     <section className="hero">
       <h1 className="hero-title">Categories</h1>
       <div className="carousel">
         <button className="arrow left" type="button" onClick={goToPrevious} aria-label="previous category">‹</button>
 
-        <div className="card card-left" aria-hidden="true">
-          <span className="card-label-small">{previousCategory?.name}</span>
+        <div
+          className="card card-left"
+          aria-hidden="true"
+          style={{
+            backgroundImage: prevImg ? `url(${prevImg})` : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          {!prevImg && <span className="card-label-small">{previousCategory?.name}</span>}
         </div>
+
         <button
           className="card card-center"
           type="button"
           onClick={() => navigate('/category', { state: { category: currentCategory } })}
           aria-label="View category"
+          style={{
+            backgroundImage: currImg ? `url(${currImg})` : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
         >
-          <span className="card-label">{currentCategory?.name}</span>
+          {!currImg && <span className="card-label">{currentCategory?.name}</span>}
         </button>
-        <div className="card card-right" aria-hidden="true">
-          <span className="card-label-small">{nextCategory?.name}</span>
+
+        <div
+          className="card card-right"
+          aria-hidden="true"
+          style={{
+            backgroundImage: nextImg ? `url(${nextImg})` : 'none',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          {!nextImg && <span className="card-label-small">{nextCategory?.name}</span>}
         </div>
 
         <button className="arrow right" type="button" onClick={goToNext} aria-label="next category">›</button>
@@ -234,14 +281,14 @@ export default function Home() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const catRes = await fetch(`${API_BASE}/api/categories`);
+        const catRes = await fetch('/api/categories');
         const catData = await catRes.json();
         if (catData && !catData.error) {
           const seen = new Set();
           setCategories(catData.filter(c => seen.has(c.id) ? false : seen.add(c.id)));
         }
 
-        const prodRes = await fetch(`${API_BASE}/api/products`);
+        const prodRes = await fetch('/api/products');
         const prodData = await prodRes.json();
         if (prodData && !prodData.error) {
           const seen = new Set();
@@ -263,7 +310,7 @@ export default function Home() {
 
     setSearching(true);
     const timer = setTimeout(() => {
-      fetch(`${API_BASE}/api/products/search?q=${encodeURIComponent(searchQuery.trim())}`)
+      fetch(`/api/products/search?q=${encodeURIComponent(searchQuery.trim())}`)
         .then((res) => res.json())
         .then((data) => {
           if (Array.isArray(data)) setSearchResults(data);
@@ -279,7 +326,7 @@ export default function Home() {
   }, [searchQuery]);
 
   return (
-    <div className="home-page">
+    <>
       <Header
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
@@ -293,6 +340,6 @@ export default function Home() {
           <RandomElements products={products} />
         </>
       )}
-    </div>
+    </>
   );
 }

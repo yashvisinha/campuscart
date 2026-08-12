@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Send } from 'lucide-react';
 import { getUserId } from '../auth';
-import { API_BASE } from '../config.js';
 import './ConversationPage.css';
 
 export default function ConversationPage() {
@@ -15,18 +14,21 @@ export default function ConversationPage() {
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef(null);
 
-  // Auth guard & Fetch conversation on load
   useEffect(() => {
     if (!currentUser) {
       navigate('/login');
       return;
     }
 
-    fetch(`${API_BASE}/api/messages/conversation/${currentUser}/${otherUserId}`)
+    fetch(`/api/messages/conversation/${currentUser}/${otherUserId}`)
       .then(res => res.json())
       .then(data => {
         if (Array.isArray(data)) setMessages(data);
         setLoading(false);
+
+        // Mark this conversation's messages as read
+        fetch(`/api/messages/read/${otherUserId}/${currentUser}`, { method: 'PUT' })
+          .catch(err => console.error('Failed to mark as read:', err));
       })
       .catch(err => {
         console.error('Error fetching conversation:', err);
@@ -34,17 +36,14 @@ export default function ConversationPage() {
       });
   }, [currentUser, otherUserId, navigate]);
 
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Send a new message
   const handleSend = async () => {
     const text = newMsg.trim();
     if (!text || !currentUser) return;
 
-    // Optimistically add the message to the UI immediately
     const optimisticMsg = {
       id: Date.now(),
       sender_id: currentUser,
@@ -55,9 +54,8 @@ export default function ConversationPage() {
     setMessages(prev => [...prev, optimisticMsg]);
     setNewMsg('');
 
-    // Then send to backend
     try {
-      await fetch(`${API_BASE}/api/messages`, {
+      await fetch('/api/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -71,7 +69,6 @@ export default function ConversationPage() {
     }
   };
 
-  // Send on Enter key
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -81,7 +78,6 @@ export default function ConversationPage() {
 
   return (
     <div className="convo-container" style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Top bar */}
       <header className="convo-topbar">
         <button className="convo-back" onClick={() => navigate('/messages')} aria-label="Back">
           <ArrowLeft size={22} />
@@ -92,7 +88,6 @@ export default function ConversationPage() {
         <h1 className="convo-name">{otherUserId}</h1>
       </header>
 
-      {/* Messages area */}
       <section className="convo-messages">
         {loading ? (
           <p className="convo-status">Loading messages...</p>
@@ -116,7 +111,6 @@ export default function ConversationPage() {
         <div ref={bottomRef} />
       </section>
 
-      {/* Input bar */}
       <footer className="convo-input-bar">
         <input
           type="text"

@@ -577,6 +577,83 @@ app.post("/api/orders", async (req, res) => {
   res.status(201).json({ order });
 });
 
+// PUT /api/profiles/:userId/photo — upload/update profile picture
+// :userId here is actually the roll number (from getUserId())
+app.put("/api/profiles/:userId/photo", async (req, res) => {
+  const { userId } = req.params;
+  const { imageData, imageName } = req.body;
+
+  if (!imageData || !imageName) {
+    return res.status(400).json({ error: "imageData and imageName are required" });
+  }
+
+  try {
+    const extension = imageName.split(".").pop()?.toLowerCase() || "jpg";
+    const contentType =
+      extension === "png" ? "image/png" :
+      extension === "webp" ? "image/webp" : "image/jpeg";
+    const fileName = `${userId}-${Date.now()}.${extension}`;
+
+    const storageClient = supabaseServiceRoleKey ? supabaseAdmin : supabase;
+
+    const uploadRes = await storageClient.storage
+      .from("avatars")
+      .upload(fileName, Buffer.from(imageData, "base64"), {
+        contentType,
+        upsert: false,
+      });
+
+    if (uploadRes.error) {
+      return res.status(500).json({ error: uploadRes.error.message });
+    }
+
+    const publicRes = storageClient.storage.from("avatars").getPublicUrl(fileName);
+    const photoUrl = publicRes?.data?.publicUrl;
+
+    const { error: updateError } = await dbClient
+      .from("profiles")
+      .update({ profile_pic_url: photoUrl })
+      .eq("roll_no", userId);
+
+    if (updateError) {
+      return res.status(500).json({ error: updateError.message });
+    }
+
+    res.json({ photoUrl });
+  } catch (err) {
+    console.error("Profile photo upload error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/profiles/by-roll/:rollNo
+app.get("/api/profiles/by-roll/:rollNo", async (req, res) => {
+  const { rollNo } = req.params;
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("full_name, profile_pic_url")
+    .eq("roll_no", rollNo)
+    .maybeSingle();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data || {});
+});
+
+// PUT /api/messages/read/:otherUserId/:currentUserId
+// Marks all messages from otherUserId to currentUserId as read
+app.put("/api/messages/read/:otherUserId/:currentUserId", async (req, res) => {
+  const { otherUserId, currentUserId } = req.params;
+
+  const { error } = await supabase
+    .from("messages")
+    .update({ read: true })
+    .eq("sender_id", otherUserId)
+    .eq("receiver_id", currentUserId);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
+});
+
 // PUT /api/orders/:id — seller accepts or declines
 app.put("/api/orders/:id", async (req, res) => {
   const { id } = req.params;
@@ -744,6 +821,22 @@ async function exchangeDAuthCode(code, redirectUri) {
   }
 
   const userData = await userRes.json();
+
+  // Create/update a profiles row for this user on every login
+  try {
+    const rollNo = userData.email ? userData.email.split("@")[0] : String(userData.id);
+    await dbClient.from("profiles").upsert(
+      {
+        roll_no: rollNo,
+        email: userData.email,
+        full_name: userData.name,
+      },
+      { onConflict: "roll_no" }
+    );
+  } catch (profileErr) {
+    console.error("Failed to upsert profile on login:", profileErr);
+  }
+
   return { userData, accessToken };
 }
 

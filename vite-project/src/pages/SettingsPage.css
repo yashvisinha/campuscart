@@ -115,7 +115,7 @@
 
 .edit-btn {
   margin-top: 10px;
-  align-self: flex-start;
+  align-self: flex-end;
   background: rgba(255,255,255,0.6);
   border: 1px solid rgba(0,0,0,0.05);
   color: #134141;
