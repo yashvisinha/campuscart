@@ -12,7 +12,20 @@ export default function ConversationPage() {
   const [messages, setMessages] = useState([]);
   const [newMsg, setNewMsg] = useState('');
   const [loading, setLoading] = useState(true);
+  const [otherUserProfile, setOtherUserProfile] = useState(null);
   const bottomRef = useRef(null);
+
+  useEffect(() => {
+    if (!otherUserId) return;
+    fetch(`/api/profiles/by-roll/${otherUserId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && !data.error) {
+          setOtherUserProfile(data);
+        }
+      })
+      .catch(err => console.error('Error fetching user profile:', err));
+  }, [otherUserId]);
 
   useEffect(() => {
     if (!currentUser) {
@@ -76,6 +89,8 @@ export default function ConversationPage() {
     }
   };
 
+  const displayName = otherUserProfile?.full_name || otherUserId;
+
   return (
     <div className="convo-container" style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column' }}>
       <header className="convo-topbar">
@@ -83,9 +98,17 @@ export default function ConversationPage() {
           <ArrowLeft size={22} />
         </button>
         <div className="convo-avatar">
-          {String(otherUserId).split(' ').map(w => w[0]?.toUpperCase()).slice(0, 2).join('')}
+          {otherUserProfile?.profile_pic_url ? (
+            <img
+              src={otherUserProfile.profile_pic_url}
+              alt={displayName}
+              style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+            />
+          ) : (
+            String(displayName).split(' ').map(w => w[0]?.toUpperCase()).slice(0, 2).join('')
+          )}
         </div>
-        <h1 className="convo-name">{otherUserId}</h1>
+        <h1 className="convo-name">{displayName}</h1>
       </header>
 
       <section className="convo-messages">

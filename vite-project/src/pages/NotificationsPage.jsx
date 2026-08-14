@@ -28,6 +28,7 @@ export default function NotificationsPage() {
   const [activeTab, setActiveTab] = useState('notifications'); // 'notifications' | 'deals'
   const [notifications, setNotifications] = useState([]);
   const [deals, setDeals] = useState([]);
+  const [userProfiles, setUserProfiles] = useState({});
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState({});
 
@@ -46,6 +47,37 @@ export default function NotificationsPage() {
 
       if (Array.isArray(notifData)) setNotifications(notifData);
       if (Array.isArray(dealsData)) setDeals(dealsData);
+
+      // Collect all unique user IDs to resolve display names
+      const rollNos = new Set();
+      if (Array.isArray(notifData)) {
+        notifData.forEach((n) => {
+          if (n.extra_data?.buyer_id) rollNos.add(String(n.extra_data.buyer_id));
+          if (n.extra_data?.seller_id) rollNos.add(String(n.extra_data.seller_id));
+        });
+      }
+      if (Array.isArray(dealsData)) {
+        dealsData.forEach((d) => {
+          if (d.buyer_id) rollNos.add(String(d.buyer_id));
+          if (d.seller_id) rollNos.add(String(d.seller_id));
+        });
+      }
+
+      const profilesMap = {};
+      await Promise.all(
+        Array.from(rollNos).map(async (rollNo) => {
+          try {
+            const res = await fetch(`${API_BASE}/api/profiles/by-roll/${rollNo}`);
+            const pData = await res.json();
+            if (pData && pData.full_name) {
+              profilesMap[rollNo] = pData.full_name;
+            }
+          } catch (e) {
+            // ignore
+          }
+        })
+      );
+      setUserProfiles(profilesMap);
     } catch (err) {
       console.error('Error fetching notifications/deals:', err);
     } finally {
@@ -60,6 +92,13 @@ export default function NotificationsPage() {
     }
     fetchData();
   }, [userId, navigate]);
+
+  const getUserName = (rollNo) => {
+    if (!rollNo) return 'User';
+    const str = String(rollNo);
+    if (userProfiles[str]) return userProfiles[str];
+    return str.match(/^\d+$/) ? `Student ${str}` : str;
+  };
 
   const handleOrderAction = async (orderId, newStatus) => {
     setActionLoading((prev) => ({ ...prev, [orderId]: true }));
@@ -134,13 +173,13 @@ export default function NotificationsPage() {
 
               if (n.type === 'purchase_request') {
                 title = `🛒 Purchase request for "${productName}"`;
-                body = `Seller / Buyer (${buyerId}) wants to buy your product.`;
+                body = `${getUserName(buyerId)} wants to buy your product.`;
               } else if (n.type === 'purchase_accepted') {
                 title = `🎉 Purchase accepted for "${productName}"!`;
-                body = `Seller (${sellerId}) accepted your offer. Arrange pickup via chat!`;
+                body = `${getUserName(sellerId)} accepted your offer. Arrange pickup via chat!`;
               } else if (n.type === 'purchase_declined') {
                 title = `❌ Purchase declined for "${productName}"`;
-                body = `Seller (${sellerId}) declined your purchase request.`;
+                body = `${getUserName(sellerId)} declined your purchase request.`;
               } else {
                 title = productName;
                 body = n.extra_data?.message || 'New update on your account.';
@@ -196,8 +235,8 @@ export default function NotificationsPage() {
               const productName = order.products?.name || 'Product';
               const isBuyer = String(order.buyer_id) === String(userId);
               const otherUserLabel = isBuyer
-                ? `Seller: ${order.seller_id}`
-                : `Buyer: ${order.buyer_id}`;
+                ? `Seller: ${getUserName(order.seller_id)}`
+                : `Buyer: ${getUserName(order.buyer_id)}`;
 
               return (
                 <article key={order.id} className="notif-item">

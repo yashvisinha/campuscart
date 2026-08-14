@@ -4,7 +4,9 @@ import { ArrowRight, LogOut } from 'lucide-react';
 import './SettingsPage.css';           // ← Now importing from same folder
 
 import pfpDefault from '../assets/pfpDefault.png';
-import { logout } from '../auth';
+import { logout, getUser, getUserId } from '../auth';
+import { HOSTEL_NAMES } from '../constants/hostels';
+import { API_BASE } from '../config.js';
 
 function SettingsPage() {
   const navigate = useNavigate();
@@ -17,23 +19,37 @@ function SettingsPage() {
   const [suggestionSubmitting, setSuggestionSubmitting] = useState(false);
 
   const [userName, setUserName] = useState("Your Name");
-  const [address, setAddress] = useState("OPAL-C 99W");
+  const [hostel, setHostel] = useState("");
+  const [roomNumber, setRoomNumber] = useState("");
   const [profilePic, setProfilePic] = useState(pfpDefault);
   const [tempPfp, setTempPfp] = useState(null);
-  const [tempAddress, setTempAddress] = useState("");
+  const [tempHostel, setTempHostel] = useState("");
+  const [tempRoomNumber, setTempRoomNumber] = useState("");
   const [selectedFileName, setSelectedFileName] = useState("");
 
-  // Load user data from DAuth local session, saved address & saved PFP
+  // Load user data from DAuth local session, saved hostel/room & saved PFP
   useEffect(() => {
     try {
       const storedUser = localStorage.getItem('dauth_user');
-      const savedAddress = localStorage.getItem('dauth_user_address');
-      
-      if (savedAddress) {
-        setAddress(savedAddress);
-      } else if (storedUser) {
-        const user = JSON.parse(storedUser);
-        if (user.address) setAddress(user.address);
+      const savedHostel = localStorage.getItem('dauth_user_hostel');
+      const savedRoom = localStorage.getItem('dauth_user_room');
+
+      if (savedHostel) setHostel(savedHostel);
+      if (savedRoom) setRoomNumber(savedRoom);
+
+      // Legacy fallback: parse old combined address if new keys missing
+      if (!savedHostel && !savedRoom) {
+        const savedAddress = localStorage.getItem('dauth_user_address');
+        if (savedAddress) {
+          // Try to split legacy "HOSTEL ROOM" format
+          const parts = savedAddress.split(' ');
+          if (parts.length >= 2) {
+            setRoomNumber(parts.pop());
+            setHostel(parts.join(' '));
+          } else {
+            setHostel(savedAddress);
+          }
+        }
       }
 
       if (storedUser) {
@@ -59,13 +75,15 @@ function SettingsPage() {
   // Edit Profile (Pfp and Address)
   const openEditModal = () => {
     setTempPfp(null);
-    setTempAddress(address);
+    setTempHostel(hostel);
+    setTempRoomNumber(roomNumber);
     setSelectedFileName("");
     setIsEditOpen(true);
   };
   const closeEditModal = () => {
     setTempPfp(null);
-    setTempAddress("");
+    setTempHostel("");
+    setTempRoomNumber("");
     setSelectedFileName("");
     setIsEditOpen(false);
   };
@@ -91,21 +109,51 @@ function SettingsPage() {
         console.error('Failed to save profile picture to localStorage:', err);
       }
     }
-    if (tempAddress.trim()) {
-      const updatedAddress = tempAddress.trim();
-      setAddress(updatedAddress);
-      try {
-        localStorage.setItem('dauth_user_address', updatedAddress);
-        const storedUser = localStorage.getItem('dauth_user');
-        if (storedUser) {
-          const user = JSON.parse(storedUser);
-          user.address = updatedAddress;
-          localStorage.setItem('dauth_user', JSON.stringify(user));
-        }
-      } catch (err) {
-        console.error('Failed to save address to localStorage:', err);
-      }
+
+    // Validate hostel is from the allowed list (or empty)
+    if (tempHostel && !HOSTEL_NAMES.includes(tempHostel)) {
+      alert('Please select a valid hostel from the list.');
+      return;
     }
+
+    // Save hostel and room number separately
+    const updatedHostel = tempHostel;
+    const updatedRoom = tempRoomNumber.trim();
+    setHostel(updatedHostel);
+    setRoomNumber(updatedRoom);
+    try {
+      localStorage.setItem('dauth_user_hostel', updatedHostel);
+      localStorage.setItem('dauth_user_room', updatedRoom);
+      // Also update the legacy combined address for backward compat
+      const combined = [updatedHostel, updatedRoom].filter(Boolean).join(' ');
+      localStorage.setItem('dauth_user_address', combined);
+      const storedUser = localStorage.getItem('dauth_user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        user.address = combined;
+        localStorage.setItem('dauth_user', JSON.stringify(user));
+      }
+
+      // Sync to backend
+      const userId = getUserId();
+      if (userId) {
+        const user = getUser();
+        fetch(`${API_BASE}/api/profiles/sync`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            roll_no: userId,
+            full_name: user?.name || undefined,
+            hostel: updatedHostel,
+            room_number: updatedRoom,
+            profile_pic_url: tempPfp || profilePic,
+          }),
+        }).catch(() => {});
+      }
+    } catch (err) {
+      console.error('Failed to save hostel/room to localStorage:', err);
+    }
+
     setIsEditOpen(false);
   };
 
@@ -165,7 +213,7 @@ function SettingsPage() {
 
           <div className="info-section">
             <h2 className="user-name">{userName}</h2>
-            <p className="address">{address}</p>
+            <p className="address">{[hostel, roomNumber].filter(Boolean).join(' ') || 'Not set'}</p>
             <button className="edit-btn" onClick={openEditModal}>Edit</button>
           </div>
         </div>
@@ -232,19 +280,35 @@ function SettingsPage() {
 
               <div className="input-group" style={{ marginTop: '16px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', color: '#a0d8d0', fontSize: '14px', fontWeight: 500 }}>
-                  Address / Hostel Location
+                  Hostel
+                </label>
+                <select
+                  className="settings-address-input"
+                  value={tempHostel}
+                  onChange={(e) => setTempHostel(e.target.value)}
+                >
+                  <option value="">Select your hostel</option>
+                  {HOSTEL_NAMES.map((name) => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="input-group" style={{ marginTop: '16px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', color: '#a0d8d0', fontSize: '14px', fontWeight: 500 }}>
+                  Room Number
                 </label>
                 <input
                   type="text"
                   className="settings-address-input"
-                  value={tempAddress}
-                  onChange={(e) => setTempAddress(e.target.value)}
-                  placeholder="e.g. OPAL-C 99W"
+                  value={tempRoomNumber}
+                  onChange={(e) => setTempRoomNumber(e.target.value)}
+                  placeholder="e.g. 99W"
                 />
               </div>
 
               <p className="note" style={{ marginTop: '16px' }}>
-                Name and email are fetched from DAuth. You can edit your address and profile picture.
+                Name and email are fetched from DAuth. You can edit your hostel, room number, and profile picture.
               </p>
             </div>
 

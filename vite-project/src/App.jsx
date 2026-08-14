@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
-import { isAuthenticated, getUserId } from './auth';
+import { isAuthenticated, getUserId, getUser } from './auth';
+import { API_BASE } from './config.js';
 import {
   Home as HomeIcon,
   ShoppingCart as ShoppingCartIcon,
@@ -84,6 +85,28 @@ function ProtectedRoute({ children }) {
 }
 
 function App() {
+  useEffect(() => {
+    const user = getUser();
+    const userId = getUserId();
+    if (!userId) return;
+
+    const hostel = localStorage.getItem('dauth_user_hostel') || '';
+    const room = localStorage.getItem('dauth_user_room') || '';
+    const pfp = localStorage.getItem('dauth_user_pfp') || null;
+
+    fetch(`${API_BASE}/api/profiles/sync`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        roll_no: userId,
+        full_name: user?.name || undefined,
+        email: user?.email || undefined,
+        hostel,
+        room_number: room,
+        profile_pic_url: pfp,
+      }),
+    }).catch(() => {});
+  }, []);
   return (
     <WishlistProvider>
       <Router>

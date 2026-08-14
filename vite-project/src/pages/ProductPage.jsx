@@ -28,6 +28,8 @@ const ProductPage = () => {
 
   const currentUserId = getUserId();
 
+  const [sellerProfile, setSellerProfile] = useState(null);
+
   useEffect(() => {
     const fetchProduct = async () => {
       if (!productId) {
@@ -45,6 +47,16 @@ const ProductPage = () => {
     };
     fetchProduct();
   }, [productId]);
+
+  useEffect(() => {
+    if (!product?.uploader_id) return;
+    fetch(`${API_BASE}/api/profiles/by-roll/${product.uploader_id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && !data.error) setSellerProfile(data);
+      })
+      .catch(err => console.error('Error fetching seller profile:', err));
+  }, [product?.uploader_id]);
 
   const handleBuyNow = async () => {
     setBuyError('');
@@ -175,7 +187,7 @@ const ProductPage = () => {
     );
   }
 
-  const sellerDisplayName = product.uploader_id || 'Unknown seller';
+  const sellerDisplayName = sellerProfile?.full_name || 'Seller';
   const isSold = product.status === 'sold';
 
   return (
@@ -220,7 +232,7 @@ const ProductPage = () => {
               <button 
                 className="pp-seller-badge"
                 onClick={() => navigate(`/conversation/${product.uploader_id}`)}
-                aria-label={`Chat with seller ${product.uploader_id}`}
+                aria-label={`Chat with seller ${sellerDisplayName}`}
               >
                 Seller: <strong>{sellerDisplayName}</strong>
               </button>

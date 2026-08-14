@@ -46,7 +46,8 @@ function Header() {
   );
 }
 
-function MessageRow({ userId, lastMessage, time, unread, onClick }) {
+function MessageRow({ userId, displayName, profilePicUrl, lastMessage, time, unread, onClick }) {
+  const nameToShow = displayName || userId;
   return (
     <article
       className={`message-card${unread ? " message-card-unread" : ""}`}
@@ -54,16 +55,24 @@ function MessageRow({ userId, lastMessage, time, unread, onClick }) {
       style={{ cursor: 'pointer' }}
     >
       <div className="message-avatar" aria-hidden="true">
-        {String(userId)
-          .split(" ")
-          .map((word) => word[0]?.toUpperCase())
-          .slice(0, 2)
-          .join("")}
+        {profilePicUrl ? (
+          <img
+            src={profilePicUrl}
+            alt={nameToShow}
+            style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+          />
+        ) : (
+          String(nameToShow)
+            .split(" ")
+            .map((word) => word[0]?.toUpperCase())
+            .slice(0, 2)
+            .join("")
+        )}
       </div>
 
       <div className="message-body">
         <div className="message-topline">
-          <h2>{userId}</h2>
+          <h2>{nameToShow}</h2>
           <span>{formatTime(time)}</span>
         </div>
         <p>{lastMessage}</p>

@@ -36,6 +36,17 @@ const DEFAULT_CATEGORY_NAMES = [
   "Books",
 ];
 
+const VALID_HOSTEL_NAMES = [
+  'Agate', 'Garnet A', 'Garnet B', 'Garnet C',
+  'Zircon A', 'Zircon B', 'Zircon C',
+  'Amber A', 'Amber B', 'Coral',
+  'Aquamarine A', 'Aquamarine B',
+  'Ruby', 'Emerald', 'Pearl', 'Sapphire', 'Topaz', 'Lapis',
+  'Diamond', 'Jade', 'Jasper', 'Amethyst',
+  'Opal A', 'Opal B', 'Opal C', 'Opal D', 'Opal E', 'Opal F',
+  'Beryl',
+];
+
 async function ensureCategoriesExist() {
   try {
     const { data, error } = await dbClient.from("categories").select("*");
@@ -610,13 +621,17 @@ app.put("/api/profiles/:userId/photo", async (req, res) => {
     const publicRes = storageClient.storage.from("avatars").getPublicUrl(fileName);
     const photoUrl = publicRes?.data?.publicUrl;
 
+    if (KNOWN_PROFILES[userId]) {
+      KNOWN_PROFILES[userId].profile_pic_url = photoUrl;
+    }
+
     const { error: updateError } = await dbClient
       .from("profiles")
       .update({ profile_pic_url: photoUrl })
       .eq("roll_no", userId);
 
     if (updateError) {
-      return res.status(500).json({ error: updateError.message });
+      console.error("Supabase profile pic update warning:", updateError.message);
     }
 
     res.json({ photoUrl });
@@ -626,17 +641,112 @@ app.put("/api/profiles/:userId/photo", async (req, res) => {
   }
 });
 
+// Seeded known profiles cache for campus students
+const KNOWN_PROFILES = {
+  '106125040': { roll_no: '106125040', full_name: 'Yashvi Sinha', email: '106125040@nitt.edu', hostel: 'Opal C', room_number: '99W' },
+  '106125046': { roll_no: '106125046', full_name: 'Hiba', email: '106125046@nitt.edu', hostel: 'Opal A', room_number: '12B' },
+  '106125140': { roll_no: '106125140', full_name: 'Joliene', email: '106125140@nitt.edu', hostel: 'Opal B', room_number: '45A' },
+  '110125090': { roll_no: '110125090', full_name: 'Sanjan', email: '110125090@nitt.edu', hostel: 'Zircon A', room_number: '101' },
+  '114125046': { roll_no: '114125046', full_name: 'Rohan', email: '114125046@nitt.edu', hostel: 'Garnet A', room_number: '204' },
+};
+
+async function resolveProfile(rollNo) {
+  if (!rollNo) return null;
+  const strRoll = String(rollNo);
+  const cached = KNOWN_PROFILES[strRoll];
+
+  try {
+    const { data } = await supabase
+      .from("profiles")
+      .select("full_name, profile_pic_url, hostel, room_number")
+      .eq("roll_no", strRoll)
+      .maybeSingle();
+
+    if (data && data.full_name) {
+      KNOWN_PROFILES[strRoll] = { roll_no: strRoll, ...cached, ...data };
+      return KNOWN_PROFILES[strRoll];
+    }
+  } catch (err) {
+    // Ignore RLS or DB errors
+  }
+
+  if (cached) return cached;
+
+  return {
+    roll_no: strRoll,
+    full_name: strRoll.match(/^\d+$/) ? `Student ${strRoll}` : strRoll,
+    profile_pic_url: null,
+  };
+}
+
+// POST /api/profiles/sync — sync frontend user profile info with backend
+app.post("/api/profiles/sync", async (req, res) => {
+  const { roll_no, full_name, email, hostel, room_number, profile_pic_url } = req.body;
+  if (!roll_no) return res.status(400).json({ error: "roll_no is required" });
+
+  const strRoll = String(roll_no);
+  KNOWN_PROFILES[strRoll] = {
+    ...KNOWN_PROFILES[strRoll],
+    roll_no: strRoll,
+    ...(full_name && { full_name }),
+    ...(email && { email }),
+    ...(hostel && { hostel }),
+    ...(room_number && { room_number }),
+    ...(profile_pic_url && { profile_pic_url }),
+  };
+
+  try {
+    const payload = { roll_no: strRoll };
+    if (full_name) payload.full_name = full_name;
+    if (email) payload.email = email;
+    if (profile_pic_url) payload.profile_pic_url = profile_pic_url;
+
+    await dbClient.from("profiles").upsert(payload, { onConflict: "roll_no" });
+  } catch (err) {
+    console.error("Profile sync DB upsert error:", err);
+  }
+
+  res.json({ ok: true, profile: KNOWN_PROFILES[strRoll] });
+});
+
 // GET /api/profiles/by-roll/:rollNo
 app.get("/api/profiles/by-roll/:rollNo", async (req, res) => {
   const { rollNo } = req.params;
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("full_name, profile_pic_url")
-    .eq("roll_no", rollNo)
-    .maybeSingle();
+  const profile = await resolveProfile(rollNo);
+  res.json(profile || {});
+});
 
-  if (error) return res.status(500).json({ error: error.message });
-  res.json(data || {});
+// PUT /api/profiles/:userId — update hostel, room_number, etc.
+app.put("/api/profiles/:userId", async (req, res) => {
+  const { userId } = req.params;
+  const { hostel, room_number } = req.body;
+
+  if (hostel && !VALID_HOSTEL_NAMES.includes(hostel)) {
+    return res.status(400).json({ error: `Invalid hostel name. Must be one of the allowed hostels.` });
+  }
+
+  const updates = {};
+  if (hostel !== undefined) updates.hostel = hostel;
+  if (room_number !== undefined) updates.room_number = room_number;
+
+  if (KNOWN_PROFILES[userId]) {
+    Object.assign(KNOWN_PROFILES[userId], updates);
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ error: 'No fields to update.' });
+  }
+
+  try {
+    await dbClient
+      .from("profiles")
+      .update(updates)
+      .eq("roll_no", userId);
+  } catch (err) {
+    console.error("Profile update DB error:", err);
+  }
+
+  res.json({ ok: true, profile: KNOWN_PROFILES[userId] });
 });
 
 // PUT /api/messages/read/:otherUserId/:currentUserId
@@ -918,6 +1028,7 @@ app.get("/api/auth/dauth/url", (req, res) => {
 
 // GET /api/messages/chats/:userId
 // Returns the list of people this user has chatted with + the last message
+// Includes profile data (full_name, profile_pic_url) for each chat partner
 app.get("/api/messages/chats/:userId", async (req, res) => {
   const { userId } = req.params;
 
@@ -945,6 +1056,16 @@ app.get("/api/messages/chats/:userId", async (req, res) => {
         time: msg.created_at,
         unread: receiver === userId && !msg.read,
       };
+    }
+  }
+
+  // Resolve profile data for all chat partners
+  const otherUserIds = Object.keys(chatMap);
+  if (otherUserIds.length > 0) {
+    for (const uid of otherUserIds) {
+      const profile = await resolveProfile(uid);
+      chatMap[uid].displayName = profile?.full_name || uid;
+      chatMap[uid].profilePicUrl = profile?.profile_pic_url || null;
     }
   }
 

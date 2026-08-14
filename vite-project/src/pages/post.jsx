@@ -46,9 +46,17 @@ function PostPage() {
   }, [selectedImage]);
 
   useEffect(() => {
-    const savedAddress = localStorage.getItem('dauth_user_address');
-    const user = getUser();
-    const autofillLoc = savedAddress || user?.address || "OPAL-C 99W";
+    const savedHostel = localStorage.getItem('dauth_user_hostel');
+    const savedRoom = localStorage.getItem('dauth_user_room');
+    let autofillLoc = '';
+    if (savedHostel || savedRoom) {
+      autofillLoc = [savedHostel, savedRoom].filter(Boolean).join(' ');
+    } else {
+      // Legacy fallback
+      const savedAddress = localStorage.getItem('dauth_user_address');
+      const user = getUser();
+      autofillLoc = savedAddress || user?.address || 'Not set';
+    }
     setFormData((current) => ({
       ...current,
       location: autofillLoc,
@@ -224,7 +232,7 @@ function PostPage() {
 
             <div className="field-row field-row-readonly">
               <span className="readonly-label">Location:</span>
-              <span className="readonly-value">{formData.location || "OPAL-C 99W"}</span>
+              <span className="readonly-value">{formData.location || "Not set"}</span>
               <span className="readonly-badge">Set in Settings</span>
             </div>
 
