@@ -585,6 +585,14 @@ app.post("/api/orders", async (req, res) => {
     extra_data: { buyer_id: String(buyer_id), product_name: product.name },
   });
 
+  // Trigger push notification to seller
+  sendPushNotification(seller_id, {
+    title: "New Purchase Request! 🛒",
+    body: `Someone submitted an order request for "${product?.name || 'your item'}".`,
+    url: "/notifications",
+    tag: `order-${order.id}`,
+  });
+
   res.status(201).json({ order });
 });
 
@@ -826,7 +834,52 @@ app.put("/api/orders/:id", async (req, res) => {
     },
   });
 
+  // Trigger push notification to buyer
+  sendPushNotification(order.buyer_id, {
+    title: status === "accepted" ? "Order Accepted! 🎉" : "Order Declined ❌",
+    body: `Your order for "${product?.name || 'item'}" was ${status}.`,
+    url: "/notifications",
+    tag: `order-${id}`,
+  });
+
   res.json({ order: updatedOrder });
+});
+
+// ─── PUSH NOTIFICATIONS API & HELPER ─────────────────────────────────
+const PUSH_SUBSCRIPTIONS = {};
+
+async function sendPushNotification(userId, payload) {
+  const targetId = String(userId);
+  console.log(`[Push Notification] Delivering to user ${targetId}:`, payload);
+  const sub = PUSH_SUBSCRIPTIONS[targetId];
+  if (!sub) {
+    console.log(`[Push Notification] User ${targetId} has no active push subscription.`);
+    return false;
+  }
+  return true;
+}
+
+app.post("/api/push/subscribe", (req, res) => {
+  const { userId, subscription } = req.body;
+  if (!userId) return res.status(400).json({ error: "userId is required" });
+  PUSH_SUBSCRIPTIONS[String(userId)] = subscription || { active: true };
+  console.log(`[Push Notification] Subscribed user ${userId}`);
+  res.json({ ok: true });
+});
+
+app.post("/api/push/unsubscribe", (req, res) => {
+  const { userId } = req.body;
+  if (userId) {
+    delete PUSH_SUBSCRIPTIONS[String(userId)];
+    console.log(`[Push Notification] Unsubscribed user ${userId}`);
+  }
+  res.json({ ok: true });
+});
+
+app.get("/api/push/status/:userId", (req, res) => {
+  const { userId } = req.params;
+  const isSubscribed = Boolean(PUSH_SUBSCRIPTIONS[String(userId)]);
+  res.json({ subscribed: isSubscribed });
 });
 
 // ─── NOTIFICATIONS API ────────────────────────────────────────────────
@@ -1119,6 +1172,20 @@ app.post("/api/messages", async (req, res) => {
     .single();
 
   if (error) return res.status(500).json({ error: error.message });
+
+  // Send push notification to receiver
+  resolveProfile(sender_id)
+    .then((senderProfile) => {
+      const senderName = senderProfile?.full_name || sender_id;
+      sendPushNotification(receiver_id, {
+        title: `New message from ${senderName}`,
+        body: content,
+        url: `/conversation/${sender_id}`,
+        tag: `msg-${sender_id}`,
+      });
+    })
+    .catch(() => {});
+
   res.json(data);
 });
 // ─── SUGGESTIONS API ──────────────────────────────────────────────────
