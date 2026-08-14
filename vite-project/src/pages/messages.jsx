@@ -46,7 +46,7 @@ function Header() {
   );
 }
 
-function MessageRow({ userId, displayName, profilePicUrl, lastMessage, time, unread, onClick }) {
+function MessageRow({ userId, displayName, profilePicUrl, lastMessage, time, unread, unreadCount, onClick }) {
   const nameToShow = displayName || userId;
   return (
     <article
@@ -73,7 +73,24 @@ function MessageRow({ userId, displayName, profilePicUrl, lastMessage, time, unr
       <div className="message-body">
         <div className="message-topline">
           <h2>{nameToShow}</h2>
-          <span>{formatTime(time)}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {unreadCount > 0 && (
+              <span
+                style={{
+                  background: '#ff7d7b',
+                  color: '#fff',
+                  fontSize: '10px',
+                  fontWeight: '700',
+                  padding: '2px 6px',
+                  borderRadius: '10px',
+                  lineHeight: 1,
+                }}
+              >
+                {unreadCount}
+              </span>
+            )}
+            <span>{formatTime(time)}</span>
+          </div>
         </div>
         <p>{lastMessage}</p>
       </div>
@@ -93,18 +110,29 @@ export default function Messages() {
       return;
     }
 
-    fetch(`${API_BASE}/api/messages/chats/${currentUser}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setChats(data);
-        }
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Failed to fetch chats:', err);
-        setLoading(false);
-      });
+    const fetchChats = () => {
+      fetch(`${API_BASE}/api/messages/chats/${currentUser}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            setChats(data);
+          }
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error('Failed to fetch chats:', err);
+          setLoading(false);
+        });
+    };
+
+    fetchChats();
+    const interval = setInterval(fetchChats, 3000);
+    window.addEventListener('unread-messages-updated', fetchChats);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('unread-messages-updated', fetchChats);
+    };
   }, [currentUser, navigate]);
 
   return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { isAuthenticated, getUserId, getUser } from './auth';
 import { API_BASE } from './config.js';
 import {
@@ -29,21 +29,39 @@ import { WishlistProvider } from './context/WishlistContext';
 // Bottom navigation component
 function BottomNav() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [hasUnreadMsg, setHasUnreadMsg] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const userId = getUserId();
 
   useEffect(() => {
     if (!userId) return;
 
-    fetch(`/api/messages/chats/${userId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setHasUnreadMsg(data.some((c) => c.unread));
-        }
-      })
-      .catch(() => {});
-  }, [userId]);
+    const checkUnread = () => {
+      fetch(`${API_BASE}/api/messages/chats/${userId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) {
+            const totalUnread = data.reduce(
+              (acc, c) => acc + (c.unreadCount || (c.unread ? 1 : 0)),
+              0
+            );
+            setUnreadCount(totalUnread);
+            setHasUnreadMsg(totalUnread > 0);
+          }
+        })
+        .catch(() => {});
+    };
+
+    checkUnread();
+    const interval = setInterval(checkUnread, 3000);
+    window.addEventListener('unread-messages-updated', checkUnread);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('unread-messages-updated', checkUnread);
+    };
+  }, [userId, location.pathname]);
 
   return (
     <nav className="bottom-nav">
@@ -53,14 +71,31 @@ function BottomNav() {
       <button className="nav-icon" onClick={() => navigate('/messages')} aria-label="Messages" style={{ position: 'relative' }}>
         <MessageCircleIcon />
         {hasUnreadMsg && (
-          <span style={{
-            position: 'absolute',
-            top: 4, right: 4,
-            width: 8, height: 8,
-            borderRadius: '50%',
-            background: '#ff686b',
-            border: '2px solid #e9d1bc',
-          }} />
+          <span
+            className="unread-indicator"
+            style={{
+              position: 'absolute',
+              top: 2,
+              right: unreadCount > 0 ? -2 : 4,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '3px',
+              background: '#ff686b',
+              color: '#ffffff',
+              borderRadius: '10px',
+              padding: unreadCount > 0 ? '1px 5px' : '0',
+              minWidth: unreadCount > 0 ? '16px' : '8px',
+              height: unreadCount > 0 ? '16px' : '8px',
+              fontSize: '10px',
+              fontWeight: '700',
+              lineHeight: 1,
+              border: '2px solid #e9d1bc',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+            }}
+          >
+            {unreadCount > 0 ? (unreadCount > 99 ? '99+' : unreadCount) : null}
+          </span>
         )}
       </button>
       <button className="nav-icon" onClick={() => navigate('/you')} aria-label="Profile"><UserIcon /></button>
