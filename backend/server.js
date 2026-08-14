@@ -629,8 +629,8 @@ app.put("/api/profiles/:userId/photo", async (req, res) => {
     const publicRes = storageClient.storage.from("avatars").getPublicUrl(fileName);
     const photoUrl = publicRes?.data?.publicUrl;
 
-    if (KNOWN_PROFILES[userId]) {
-      KNOWN_PROFILES[userId].profile_pic_url = photoUrl;
+    if (PROFILE_CACHE[userId]) {
+      PROFILE_CACHE[userId].profile_pic_url = photoUrl;
     }
 
     const { error: updateError } = await dbClient
@@ -649,40 +649,35 @@ app.put("/api/profiles/:userId/photo", async (req, res) => {
   }
 });
 
-// Seeded known profiles cache for campus students
-const KNOWN_PROFILES = {
-  '106125040': { roll_no: '106125040', full_name: 'Yashvi Sinha', email: '106125040@nitt.edu', hostel: 'Opal C', room_number: '99W' },
-  '106125046': { roll_no: '106125046', full_name: 'Hiba', email: '106125046@nitt.edu', hostel: 'Opal A', room_number: '12B' },
-  '106125140': { roll_no: '106125140', full_name: 'Joliene', email: '106125140@nitt.edu', hostel: 'Opal B', room_number: '45A' },
-  '110125090': { roll_no: '110125090', full_name: 'Sanjan', email: '110125090@nitt.edu', hostel: 'Zircon A', room_number: '101' },
-  '114125046': { roll_no: '114125046', full_name: 'Rohan', email: '114125046@nitt.edu', hostel: 'Garnet A', room_number: '204' },
-};
+// In-memory cache for profiles resolved live from Supabase or synced by users
+const PROFILE_CACHE = {};
 
 async function resolveProfile(rollNo) {
   if (!rollNo) return null;
   const strRoll = String(rollNo);
-  const cached = KNOWN_PROFILES[strRoll];
+
+  if (PROFILE_CACHE[strRoll] && PROFILE_CACHE[strRoll].full_name) {
+    return PROFILE_CACHE[strRoll];
+  }
 
   try {
-    const { data } = await supabase
+    const { data, error } = await dbClient
       .from("profiles")
-      .select("full_name, profile_pic_url, hostel, room_number")
+      .select("roll_no, full_name, profile_pic_url, hostel, room_number")
       .eq("roll_no", strRoll)
       .maybeSingle();
 
-    if (data && data.full_name) {
-      KNOWN_PROFILES[strRoll] = { roll_no: strRoll, ...cached, ...data };
-      return KNOWN_PROFILES[strRoll];
+    if (!error && data && data.full_name) {
+      PROFILE_CACHE[strRoll] = data;
+      return data;
     }
   } catch (err) {
-    // Ignore RLS or DB errors
+    console.error("resolveProfile exception:", err);
   }
 
-  if (cached) return cached;
-
-  return {
+  return PROFILE_CACHE[strRoll] || {
     roll_no: strRoll,
-    full_name: strRoll.match(/^\d+$/) ? `Student ${strRoll}` : strRoll,
+    full_name: null,
     profile_pic_url: null,
   };
 }
@@ -693,8 +688,8 @@ app.post("/api/profiles/sync", async (req, res) => {
   if (!roll_no) return res.status(400).json({ error: "roll_no is required" });
 
   const strRoll = String(roll_no);
-  KNOWN_PROFILES[strRoll] = {
-    ...KNOWN_PROFILES[strRoll],
+  PROFILE_CACHE[strRoll] = {
+    ...PROFILE_CACHE[strRoll],
     roll_no: strRoll,
     ...(full_name && { full_name }),
     ...(email && { email }),
@@ -714,7 +709,7 @@ app.post("/api/profiles/sync", async (req, res) => {
     console.error("Profile sync DB upsert error:", err);
   }
 
-  res.json({ ok: true, profile: KNOWN_PROFILES[strRoll] });
+  res.json({ ok: true, profile: PROFILE_CACHE[strRoll] });
 });
 
 // GET /api/profiles/by-roll/:rollNo
@@ -737,8 +732,8 @@ app.put("/api/profiles/:userId", async (req, res) => {
   if (hostel !== undefined) updates.hostel = hostel;
   if (room_number !== undefined) updates.room_number = room_number;
 
-  if (KNOWN_PROFILES[userId]) {
-    Object.assign(KNOWN_PROFILES[userId], updates);
+  if (PROFILE_CACHE[userId]) {
+    Object.assign(PROFILE_CACHE[userId], updates);
   }
 
   if (Object.keys(updates).length === 0) {
@@ -754,7 +749,7 @@ app.put("/api/profiles/:userId", async (req, res) => {
     console.error("Profile update DB error:", err);
   }
 
-  res.json({ ok: true, profile: KNOWN_PROFILES[userId] });
+  res.json({ ok: true, profile: PROFILE_CACHE[userId] });
 });
 
 // PUT /api/messages/read/:otherUserId/:currentUserId
