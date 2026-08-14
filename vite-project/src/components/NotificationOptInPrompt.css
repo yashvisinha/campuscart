@@ -1,0 +1,108 @@
+.push-optin-overlay {
+  position: fixed;
+  bottom: 75px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  max-width: 440px;
+  z-index: 999;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.push-optin-card {
+  background: rgba(19, 65, 65, 0.95);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(162, 207, 206, 0.3);
+  border-radius: 20px;
+  padding: 18px 20px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.push-optin-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.push-optin-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(255, 104, 107, 0.15);
+  border: 1px solid rgba(255, 104, 107, 0.3);
+  color: #ff686b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.push-optin-text h3 {
+  font-family: 'Hanken Grotesk', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 4px 0;
+}
+
+.push-optin-text p {
+  font-size: 13px;
+  color: #c0c8c7;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.push-optin-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.push-btn-dismiss {
+  background: transparent;
+  border: 1px solid rgba(162, 207, 206, 0.2);
+  color: #a2cfce;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.push-btn-dismiss:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.push-btn-enable {
+  background: #ff686b;
+  border: none;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255, 104, 107, 0.3);
+  transition: all 0.15s ease;
+}
+
+.push-btn-enable:hover {
+  background: #ff5256;
+  transform: translateY(-1px);
+}

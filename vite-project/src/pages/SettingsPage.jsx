@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, LogOut } from 'lucide-react';
+import { ArrowRight, LogOut, Bell } from 'lucide-react';
 import './SettingsPage.css';           // ← Now importing from same folder
 
 import pfpDefault from '../assets/pfpDefault.png';
 import { logout, getUser, getUserId } from '../auth';
 import { HOSTEL_NAMES } from '../constants/hostels';
 import { API_BASE } from '../config.js';
+import {
+  getPushPermissionState,
+  requestPushPermissionAndEnable,
+  unsubscribeUserFromPush,
+} from '../utils/pushNotifications.js';
 
 function SettingsPage() {
   const navigate = useNavigate();
@@ -17,6 +22,40 @@ function SettingsPage() {
   const [suggestionText, setSuggestionText] = useState("");
   const [suggestionSubmitted, setSuggestionSubmitted] = useState(false);
   const [suggestionSubmitting, setSuggestionSubmitting] = useState(false);
+
+  const [pushStatus, setPushStatus] = useState('default');
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+
+  useEffect(() => {
+    const state = getPushPermissionState();
+    setPushStatus(state);
+    const userChoice = localStorage.getItem('push_opt_in_choice');
+    setPushEnabled(state === 'granted' && userChoice !== 'disabled');
+  }, []);
+
+  const handlePushToggle = async () => {
+    setPushLoading(true);
+    try {
+      if (pushEnabled) {
+        await unsubscribeUserFromPush();
+        setPushEnabled(false);
+      } else {
+        if (pushStatus === 'denied') {
+          alert('Push notifications are blocked in your browser site settings. Please unblock notifications in site settings.');
+          return;
+        }
+        const perm = await requestPushPermissionAndEnable();
+        const newState = getPushPermissionState();
+        setPushStatus(newState);
+        setPushEnabled(perm === 'granted');
+      }
+    } catch (err) {
+      console.error('Failed to toggle push notifications:', err);
+    } finally {
+      setPushLoading(false);
+    }
+  };
 
   const [userName, setUserName] = useState("Your Name");
   const [hostel, setHostel] = useState("");
@@ -221,6 +260,53 @@ function SettingsPage() {
 
       {/* Menu Items */}
       <div className="menu-list">
+        <div className="menu-item" style={{ cursor: 'default', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Bell size={20} color="#a0d8d0" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+              <span style={{ fontSize: '15px', fontWeight: '600', color: '#e2e3df' }}>Push Notifications</span>
+              <span style={{ fontSize: '12px', color: pushStatus === 'denied' ? '#ff686b' : '#a0d8d0' }}>
+                {pushStatus === 'denied'
+                  ? 'Blocked in browser settings'
+                  : pushEnabled
+                  ? 'Enabled'
+                  : 'Disabled'}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="push-toggle-switch"
+            onClick={handlePushToggle}
+            disabled={pushLoading}
+            style={{
+              width: '46px',
+              height: '26px',
+              borderRadius: '13px',
+              background: pushEnabled ? '#ff686b' : 'rgba(255,255,255,0.15)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              position: 'relative',
+              cursor: 'pointer',
+              transition: 'background 0.2s ease',
+            }}
+            aria-label="Toggle push notifications"
+          >
+            <span
+              style={{
+                position: 'absolute',
+                top: '2px',
+                left: pushEnabled ? '22px' : '2px',
+                width: '20px',
+                height: '20px',
+                borderRadius: '50%',
+                background: '#ffffff',
+                transition: 'left 0.2s ease',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+              }}
+            />
+          </button>
+        </div>
+
         <div className="menu-item" onClick={() => setIsSupportOpen(true)}>
           <span>Support</span>
           <ArrowRight size={22} />

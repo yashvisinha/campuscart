@@ -25,6 +25,7 @@ import WishlistPage from './pages/WishlistPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ConversationPage from './pages/ConversationPage';
 import { WishlistProvider } from './context/WishlistContext';
+import NotificationOptInPrompt from './components/NotificationOptInPrompt';
 
 // Bottom navigation component
 function BottomNav() {
@@ -110,6 +111,7 @@ function PageLayout({ children }) {
       <section className="app-content">
         {children}
       </section>
+      <NotificationOptInPrompt />
       <BottomNav />
     </main>
   );
