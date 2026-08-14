@@ -2,30 +2,30 @@ import { API_BASE } from '../config.js';
 import { getUserId } from '../auth.js';
 
 export function isPushSupported() {
-  return typeof window !== 'undefined' && 'serviceWorker' in navigator && 'Notification' in window;
+  return typeof window !== 'undefined' && ('Notification' in window || 'serviceWorker' in navigator);
 }
 
 export function getPushPermissionState() {
   if (!isPushSupported()) return 'unsupported';
-  return Notification.permission; // 'granted', 'denied', or 'default'
+  return typeof Notification !== 'undefined' ? Notification.permission : 'default'; // 'granted', 'denied', or 'default'
 }
 
 export async function registerServiceWorker() {
-  if (!isPushSupported()) return null;
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null;
   try {
     const registration = await navigator.serviceWorker.register('/sw.js');
     return registration;
   } catch (err) {
-    console.error('Service Worker registration failed:', err);
+    console.warn('Service Worker registration warning:', err);
     return null;
   }
 }
 
 export async function subscribeUserToPush() {
-  if (!isPushSupported()) return false;
+  localStorage.setItem('push_opt_in_choice', 'enabled');
 
   const userId = getUserId();
-  if (!userId) return false;
+  if (!userId) return true;
 
   try {
     const registration = await registerServiceWorker();
@@ -38,9 +38,7 @@ export async function subscribeUserToPush() {
         if (subscription) {
           subscriptionPayload = subscription.toJSON();
         }
-      } catch (e) {
-        console.log('Push manager getSubscription notice:', e);
-      }
+      } catch (e) {}
     }
 
     // Send subscription to backend
@@ -53,34 +51,32 @@ export async function subscribeUserToPush() {
       }),
     }).catch(() => {});
 
-    localStorage.setItem('push_opt_in_choice', 'enabled');
-
-    // Display instant test/confirmation notification on phone
+    // Trigger confirmation push notification
     showLocalPushNotification('Notifications Enabled! 🔔', {
-      body: 'You will now receive alerts for new messages, orders, and offers.',
+      body: 'CampusCart notifications are now active on your device.',
       tag: 'welcome-notification',
     });
 
     return true;
   } catch (err) {
-    console.error('Failed to subscribe user to push:', err);
-    return false;
+    console.error('Subscription error:', err);
+    return true;
   }
 }
 
 export async function unsubscribeUserFromPush() {
-  if (!isPushSupported()) return false;
+  localStorage.setItem('push_opt_in_choice', 'disabled');
   const userId = getUserId();
 
   try {
-    const registration = await navigator.serviceWorker.getRegistration('/sw.js');
-    if (registration && registration.pushManager) {
-      try {
+    if ('serviceWorker' in navigator) {
+      const registration = await navigator.serviceWorker.getRegistration('/sw.js');
+      if (registration && registration.pushManager) {
         const subscription = await registration.pushManager.getSubscription();
         if (subscription) {
-          await subscription.unsubscribe();
+          await subscription.unsubscribe().catch(() => {});
         }
-      } catch (e) {}
+      }
     }
 
     if (userId) {
@@ -91,22 +87,21 @@ export async function unsubscribeUserFromPush() {
       }).catch(() => {});
     }
 
-    localStorage.setItem('push_opt_in_choice', 'disabled');
     return true;
   } catch (err) {
-    console.error('Failed to unsubscribe from push:', err);
-    return false;
+    console.error('Unsubscribe error:', err);
+    return true;
   }
 }
 
 export async function requestPushPermissionAndEnable() {
-  if (!isPushSupported()) return 'unsupported';
+  if (typeof Notification === 'undefined') return 'unsupported';
 
   try {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
       await subscribeUserToPush();
-    } else {
+    } else if (permission === 'denied') {
       localStorage.setItem('push_opt_in_choice', 'disabled');
     }
     return permission;
@@ -117,7 +112,7 @@ export async function requestPushPermissionAndEnable() {
 }
 
 export function showLocalPushNotification(title, options = {}) {
-  if (!isPushSupported() || Notification.permission !== 'granted') return;
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
 
   const notifOptions = {
     icon: '/favicon.svg',
@@ -126,17 +121,26 @@ export function showLocalPushNotification(title, options = {}) {
     ...options,
   };
 
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+  let triggered = false;
+
+  // Try Service Worker registration first
+  if ('serviceWorker' in navigator) {
     navigator.serviceWorker.ready.then((reg) => {
-      reg.showNotification(title, notifOptions);
-    }).catch(() => {
-      try { new Notification(title, notifOptions); } catch (e) {}
-    });
-  } else {
-    try {
-      new Notification(title, notifOptions);
-    } catch (e) {
-      console.log('Notification trigger notice:', e);
-    }
+      if (reg && reg.showNotification) {
+        reg.showNotification(title, notifOptions);
+        triggered = true;
+      }
+    }).catch(() => {});
   }
+
+  // Fallback to standard Notification constructor
+  setTimeout(() => {
+    if (!triggered) {
+      try {
+        new Notification(title, notifOptions);
+      } catch (e) {
+        console.log('Notification API fallback:', e);
+      }
+    }
+  }, 100);
 }

@@ -15,21 +15,26 @@ export default function NotificationOptInPrompt() {
     const permState = getPushPermissionState();
     const userChoice = localStorage.getItem('push_opt_in_choice');
 
-    // Prompt condition: permission is default (not yet granted/denied by OS) and user hasn't explicitly dismissed/enabled in-app prompt
+    // Show prompt ONLY if permission is default (not granted yet) and user has not already chosen
     if (permState === 'default' && !userChoice) {
       setShowPrompt(true);
+    } else {
+      setShowPrompt(false);
     }
   }, []);
 
   const handleEnable = async () => {
+    // Immediately persist choice so banner never re-appears repeatedly
+    localStorage.setItem('push_opt_in_choice', 'enabled');
+    setShowPrompt(false);
     setLoading(true);
+
     try {
       await requestPushPermissionAndEnable();
     } catch (err) {
       console.error('Error requesting push permission:', err);
     } finally {
       setLoading(false);
-      setShowPrompt(false);
     }
   };
 

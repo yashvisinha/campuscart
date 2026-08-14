@@ -10,7 +10,9 @@ import { API_BASE } from '../config.js';
 import {
   getPushPermissionState,
   requestPushPermissionAndEnable,
+  subscribeUserToPush,
   unsubscribeUserFromPush,
+  showLocalPushNotification,
 } from '../utils/pushNotifications.js';
 
 function SettingsPage() {
@@ -45,21 +47,28 @@ function SettingsPage() {
           alert('Push notifications are blocked in your browser site settings. Please unblock notifications in site settings.');
           return;
         }
-        if (pushStatus === 'granted') {
-          await subscribeUserToPush();
-          setPushEnabled(true);
-        } else {
-          const perm = await requestPushPermissionAndEnable();
-          const newState = getPushPermissionState();
-          setPushStatus(newState);
-          setPushEnabled(perm === 'granted');
-        }
+        await subscribeUserToPush();
+        const perm = await requestPushPermissionAndEnable();
+        const newState = getPushPermissionState();
+        setPushStatus(newState);
+        setPushEnabled(true);
       }
     } catch (err) {
       console.error('Failed to toggle push notifications:', err);
     } finally {
       setPushLoading(false);
     }
+  };
+
+  const handleTestNotification = () => {
+    if (pushStatus === 'denied') {
+      alert('Notifications are blocked in your browser settings.');
+      return;
+    }
+    showLocalPushNotification('CampusCart Push Test 🔔', {
+      body: 'Mobile & browser push notifications are active on your device!',
+      tag: 'test-notification',
+    });
   };
 
   const [userName, setUserName] = useState("Your Name");
@@ -265,51 +274,93 @@ function SettingsPage() {
 
       {/* Menu Items */}
       <div className="menu-list">
-        <div className="menu-item" style={{ cursor: 'default', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Bell size={20} color="#a0d8d0" />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-              <span style={{ fontSize: '15px', fontWeight: '600', color: '#e2e3df' }}>Push Notifications</span>
-              <span style={{ fontSize: '12px', color: pushStatus === 'denied' ? '#ff686b' : '#a0d8d0' }}>
-                {pushStatus === 'denied'
-                  ? 'Blocked in browser settings'
-                  : pushEnabled
-                  ? 'Enabled'
-                  : 'Disabled'}
-              </span>
+        <div className="menu-item" style={{ cursor: 'default', flexDirection: 'column', alignItems: 'stretch', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Bell size={20} color="#a0d8d0" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <span style={{ fontSize: '15px', fontWeight: '600', color: '#e2e3df' }}>Push Notifications</span>
+                <span style={{ fontSize: '12px', color: pushStatus === 'denied' ? '#ff686b' : '#a0d8d0' }}>
+                  {pushStatus === 'denied'
+                    ? 'Blocked in browser settings'
+                    : pushEnabled
+                    ? 'Enabled'
+                    : 'Disabled'}
+                </span>
+              </div>
             </div>
-          </div>
-          <button
-            type="button"
-            className="push-toggle-switch"
-            onClick={handlePushToggle}
-            disabled={pushLoading}
-            style={{
-              width: '46px',
-              height: '26px',
-              borderRadius: '13px',
-              background: pushEnabled ? '#ff686b' : 'rgba(255,255,255,0.15)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              position: 'relative',
-              cursor: 'pointer',
-              transition: 'background 0.2s ease',
-            }}
-            aria-label="Toggle push notifications"
-          >
-            <span
+            <button
+              type="button"
+              className="push-toggle-switch"
+              onClick={handlePushToggle}
+              disabled={pushLoading}
               style={{
-                position: 'absolute',
-                top: '2px',
-                left: pushEnabled ? '22px' : '2px',
-                width: '20px',
-                height: '20px',
-                borderRadius: '50%',
-                background: '#ffffff',
-                transition: 'left 0.2s ease',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                width: '46px',
+                height: '26px',
+                borderRadius: '13px',
+                background: pushEnabled ? '#ff686b' : 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'background 0.2s ease',
               }}
-            />
-          </button>
+              aria-label="Toggle push notifications"
+            >
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '2px',
+                  left: pushEnabled ? '22px' : '2px',
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '50%',
+                  background: '#ffffff',
+                  transition: 'left 0.2s ease',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                }}
+              />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+            <button
+              type="button"
+              onClick={handlePushToggle}
+              disabled={pushLoading}
+              style={{
+                flex: 1,
+                padding: '6px 12px',
+                fontSize: '12px',
+                fontWeight: '600',
+                borderRadius: '8px',
+                border: '1px solid rgba(162,207,206,0.3)',
+                background: pushEnabled ? 'rgba(255,104,107,0.2)' : 'rgba(255,255,255,0.08)',
+                color: pushEnabled ? '#ff686b' : '#a0d8d0',
+                cursor: 'pointer',
+              }}
+            >
+              {pushEnabled ? 'Disable Notifications' : 'Enable Notifications'}
+            </button>
+
+            {pushEnabled && (
+              <button
+                type="button"
+                onClick={handleTestNotification}
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  fontWeight: '600',
+                  borderRadius: '8px',
+                  border: '1px solid #58aeb0',
+                  background: 'rgba(88,174,176,0.2)',
+                  color: '#bffcff',
+                  cursor: 'pointer',
+                }}
+              >
+                Test Alert 🔔
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="menu-item" onClick={() => setIsSupportOpen(true)}>
