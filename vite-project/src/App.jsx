@@ -26,6 +26,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import ConversationPage from './pages/ConversationPage';
 import { WishlistProvider } from './context/WishlistContext';
 import NotificationOptInPrompt from './components/NotificationOptInPrompt';
+import { showLocalPushNotification } from './utils/pushNotifications.js';
 
 // Bottom navigation component
 function BottomNav() {
@@ -33,6 +34,7 @@ function BottomNav() {
   const location = useLocation();
   const [hasUnreadMsg, setHasUnreadMsg] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const prevUnreadRef = React.useRef(0);
   const userId = getUserId();
 
   useEffect(() => {
@@ -47,6 +49,18 @@ function BottomNav() {
               (acc, c) => acc + (c.unreadCount || (c.unread ? 1 : 0)),
               0
             );
+            if (totalUnread > prevUnreadRef.current) {
+              const latestChat = data.find((c) => c.unread);
+              showLocalPushNotification(
+                latestChat ? `New message from ${latestChat.displayName || latestChat.userId}` : 'New message received! 💬',
+                {
+                  body: latestChat?.lastMessage || 'You have new unread messages.',
+                  url: latestChat ? `/conversation/${latestChat.userId}` : '/messages',
+                  tag: 'unread-message',
+                }
+              );
+            }
+            prevUnreadRef.current = totalUnread;
             setUnreadCount(totalUnread);
             setHasUnreadMsg(totalUnread > 0);
           }

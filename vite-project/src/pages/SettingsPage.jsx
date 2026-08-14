@@ -45,10 +45,15 @@ function SettingsPage() {
           alert('Push notifications are blocked in your browser site settings. Please unblock notifications in site settings.');
           return;
         }
-        const perm = await requestPushPermissionAndEnable();
-        const newState = getPushPermissionState();
-        setPushStatus(newState);
-        setPushEnabled(perm === 'granted');
+        if (pushStatus === 'granted') {
+          await subscribeUserToPush();
+          setPushEnabled(true);
+        } else {
+          const perm = await requestPushPermissionAndEnable();
+          const newState = getPushPermissionState();
+          setPushStatus(newState);
+          setPushEnabled(perm === 'granted');
+        }
       }
     } catch (err) {
       console.error('Failed to toggle push notifications:', err);

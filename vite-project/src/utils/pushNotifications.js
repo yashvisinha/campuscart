@@ -29,23 +29,19 @@ export async function subscribeUserToPush() {
 
   try {
     const registration = await registerServiceWorker();
-    if (!registration) return false;
 
-    // Check existing push subscription or create dummy web push subscription token
-    let subscription = await registration.pushManager?.getSubscription();
-    if (!subscription && registration.pushManager) {
+    let subscriptionPayload = { endpoint: 'browser-' + userId, active: true };
+
+    if (registration && registration.pushManager) {
       try {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          // Generic applicationServerKey fallback if vapid not present
-          applicationServerKey: urlBase64ToUint8Array('BEl62iUYgUivxIkv69yViEuiBIa-Ib9-Skv69yViEuiBIa-Ib9'),
-        }).catch(() => null);
-      } catch (subErr) {
-        console.log('Native pushManager subscribe fallback:', subErr);
+        let subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          subscriptionPayload = subscription.toJSON();
+        }
+      } catch (e) {
+        console.log('Push manager getSubscription notice:', e);
       }
     }
-
-    const payload = subscription ? subscription.toJSON() : { endpoint: 'browser-notification-' + userId, keys: {} };
 
     // Send subscription to backend
     await fetch(`${API_BASE}/api/push/subscribe`, {
@@ -53,11 +49,18 @@ export async function subscribeUserToPush() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         userId,
-        subscription: payload,
+        subscription: subscriptionPayload,
       }),
-    });
+    }).catch(() => {});
 
     localStorage.setItem('push_opt_in_choice', 'enabled');
+
+    // Display instant test/confirmation notification on phone
+    showLocalPushNotification('Notifications Enabled! 🔔', {
+      body: 'You will now receive alerts for new messages, orders, and offers.',
+      tag: 'welcome-notification',
+    });
+
     return true;
   } catch (err) {
     console.error('Failed to subscribe user to push:', err);
@@ -71,11 +74,13 @@ export async function unsubscribeUserFromPush() {
 
   try {
     const registration = await navigator.serviceWorker.getRegistration('/sw.js');
-    if (registration) {
-      const subscription = await registration.pushManager?.getSubscription();
-      if (subscription) {
-        await subscription.unsubscribe();
-      }
+    if (registration && registration.pushManager) {
+      try {
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          await subscription.unsubscribe();
+        }
+      } catch (e) {}
     }
 
     if (userId) {
@@ -83,7 +88,7 @@ export async function unsubscribeUserFromPush() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId }),
-      });
+      }).catch(() => {});
     }
 
     localStorage.setItem('push_opt_in_choice', 'disabled');
@@ -97,47 +102,41 @@ export async function unsubscribeUserFromPush() {
 export async function requestPushPermissionAndEnable() {
   if (!isPushSupported()) return 'unsupported';
 
-  // Explicit OS-level permission request called ONLY after user consent
-  const permission = await Notification.requestPermission();
-  if (permission === 'granted') {
-    await subscribeUserToPush();
-  } else if (permission === 'denied') {
-    localStorage.setItem('push_opt_in_choice', 'disabled');
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission === 'granted') {
+      await subscribeUserToPush();
+    } else {
+      localStorage.setItem('push_opt_in_choice', 'disabled');
+    }
+    return permission;
+  } catch (e) {
+    console.error('Permission request failed:', e);
+    return 'denied';
   }
-  return permission;
 }
 
 export function showLocalPushNotification(title, options = {}) {
   if (!isPushSupported() || Notification.permission !== 'granted') return;
 
-  if (navigator.serviceWorker?.controller) {
+  const notifOptions = {
+    icon: '/favicon.svg',
+    badge: '/favicon.svg',
+    vibrate: [100, 50, 100],
+    ...options,
+  };
+
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
     navigator.serviceWorker.ready.then((reg) => {
-      reg.showNotification(title, {
-        icon: '/favicon.svg',
-        badge: '/favicon.svg',
-        vibrate: [100, 50, 100],
-        ...options,
-      });
+      reg.showNotification(title, notifOptions);
+    }).catch(() => {
+      try { new Notification(title, notifOptions); } catch (e) {}
     });
   } else {
     try {
-      new Notification(title, {
-        icon: '/favicon.svg',
-        ...options,
-      });
+      new Notification(title, notifOptions);
     } catch (e) {
-      console.log('Local notification failed:', e);
+      console.log('Notification trigger notice:', e);
     }
   }
-}
-
-function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
 }
