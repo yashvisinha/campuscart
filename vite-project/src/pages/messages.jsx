@@ -115,7 +115,10 @@ export default function Messages() {
         .then((res) => res.json())
         .then((data) => {
           if (Array.isArray(data)) {
-            setChats(data);
+            const sorted = [...data].sort(
+              (a, b) => new Date(b.time || 0) - new Date(a.time || 0)
+            );
+            setChats(sorted);
           }
           setLoading(false);
         })

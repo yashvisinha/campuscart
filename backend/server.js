@@ -1076,7 +1076,11 @@ app.get("/api/messages/chats/:userId", async (req, res) => {
     }
   }
 
-  res.json(Object.values(chatMap));
+  const sortedChats = Object.values(chatMap).sort(
+    (a, b) => new Date(b.time) - new Date(a.time)
+  );
+
+  res.json(sortedChats);
 });
 
 // GET /api/messages/conversation/:user1/:user2
