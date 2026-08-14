@@ -7,6 +7,7 @@ require("dotenv").config({
 });
 const { createClient } = require("@supabase/supabase-js");
 const { buildProductPayload } = require("./productService");
+const webpush = require("web-push");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -25,6 +26,47 @@ const supabaseAdmin = createClient(
 
 // Use dbClient for database operations (uses service role key when configured to bypass RLS)
 const dbClient = supabaseServiceRoleKey ? supabaseAdmin : supabase;
+
+// VAPID keys setup for Web Push notifications
+let vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+let vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+
+if (!vapidPublicKey || !vapidPrivateKey) {
+  const generatedKeys = webpush.generateVAPIDKeys();
+  vapidPublicKey = generatedKeys.publicKey;
+  vapidPrivateKey = generatedKeys.privateKey;
+}
+
+webpush.setVapidDetails(
+  process.env.VAPID_SUBJECT || "mailto:campuscart@nitt.edu",
+  vapidPublicKey,
+  vapidPrivateKey
+);
+
+const PUSH_SUBSCRIPTIONS = {};
+
+async function sendPushNotification(targetUserId, payload) {
+  if (!targetUserId) return;
+  const strId = String(targetUserId);
+  const subs = PUSH_SUBSCRIPTIONS[strId];
+  if (!subs || subs.length === 0) return;
+
+  const payloadString = JSON.stringify(payload);
+  const remainingSubs = [];
+
+  for (const sub of subs) {
+    try {
+      await webpush.sendNotification(sub, payloadString);
+      remainingSubs.push(sub);
+    } catch (err) {
+      console.log(`Push notification send status for user ${strId}:`, err.statusCode || err.message);
+      if (err.statusCode !== 410 && err.statusCode !== 404) {
+        remainingSubs.push(sub);
+      }
+    }
+  }
+  PUSH_SUBSCRIPTIONS[strId] = remainingSubs;
+}
 
 const DEFAULT_CATEGORY_NAMES = [
   "Clothes",
@@ -829,51 +871,70 @@ app.put("/api/orders/:id", async (req, res) => {
     },
   });
 
-  // Trigger push notification to buyer
-  sendPushNotification(order.buyer_id, {
-    title: status === "accepted" ? "Order Accepted! 🎉" : "Order Declined ❌",
-    body: `Your order for "${product?.name || 'item'}" was ${status}.`,
-    url: "/notifications",
-    tag: `order-${id}`,
-  });
+  // Trigger mobile push notification to buyer
+  resolveProfile(order.seller_id)
+    .then((sellerProfile) => {
+      const sellerName = sellerProfile?.full_name || order.seller_id;
+      if (status === "accepted") {
+        sendPushNotification(order.buyer_id, {
+          title: "🎉 Offer Accepted!",
+          body: `${sellerName} accepted your purchase request for "${product?.name || 'item'}". Tap to arrange pickup!`,
+          url: `/conversation/${order.seller_id}`,
+          tag: `order-${id}`,
+        });
+      } else if (status === "declined") {
+        sendPushNotification(order.buyer_id, {
+          title: "❌ Offer Declined",
+          body: `${sellerName} declined your purchase request for "${product?.name || 'item'}".`,
+          url: "/notifications",
+          tag: `order-${id}`,
+        });
+      }
+    })
+    .catch(() => {});
 
   res.json({ order: updatedOrder });
 });
 
-// ─── PUSH NOTIFICATIONS API & HELPER ─────────────────────────────────
-const PUSH_SUBSCRIPTIONS = {};
+// ─── PUSH NOTIFICATIONS API ──────────────────────────────────────────
 
-async function sendPushNotification(userId, payload) {
-  const targetId = String(userId);
-  console.log(`[Push Notification] Delivering to user ${targetId}:`, payload);
-  const sub = PUSH_SUBSCRIPTIONS[targetId];
-  if (!sub) {
-    console.log(`[Push Notification] User ${targetId} has no active push subscription.`);
-    return false;
-  }
-  return true;
-}
+// GET /api/push/vapid-public-key
+app.get("/api/push/vapid-public-key", (req, res) => {
+  res.json({ publicKey: vapidPublicKey });
+});
 
+// POST /api/push/subscribe
 app.post("/api/push/subscribe", (req, res) => {
   const { userId, subscription } = req.body;
-  if (!userId) return res.status(400).json({ error: "userId is required" });
-  PUSH_SUBSCRIPTIONS[String(userId)] = subscription || { active: true };
-  console.log(`[Push Notification] Subscribed user ${userId}`);
+  if (!userId || !subscription) {
+    return res.status(400).json({ error: "userId and subscription are required" });
+  }
+
+  const strId = String(userId);
+  if (!PUSH_SUBSCRIPTIONS[strId]) {
+    PUSH_SUBSCRIPTIONS[strId] = [];
+  }
+
+  const exists = PUSH_SUBSCRIPTIONS[strId].some((s) => s.endpoint === subscription.endpoint);
+  if (!exists && subscription.endpoint) {
+    PUSH_SUBSCRIPTIONS[strId].push(subscription);
+  }
+
   res.json({ ok: true });
 });
 
+// POST /api/push/unsubscribe
 app.post("/api/push/unsubscribe", (req, res) => {
   const { userId } = req.body;
   if (userId) {
     delete PUSH_SUBSCRIPTIONS[String(userId)];
-    console.log(`[Push Notification] Unsubscribed user ${userId}`);
   }
   res.json({ ok: true });
 });
 
 app.get("/api/push/status/:userId", (req, res) => {
   const { userId } = req.params;
-  const isSubscribed = Boolean(PUSH_SUBSCRIPTIONS[String(userId)]);
+  const isSubscribed = Boolean(PUSH_SUBSCRIPTIONS[String(userId)]?.length);
   res.json({ subscribed: isSubscribed });
 });
 

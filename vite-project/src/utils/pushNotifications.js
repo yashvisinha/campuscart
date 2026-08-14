@@ -21,6 +21,17 @@ export async function registerServiceWorker() {
   }
 }
 
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
 export async function subscribeUserToPush() {
   localStorage.setItem('push_opt_in_choice', 'enabled');
 
@@ -30,15 +41,36 @@ export async function subscribeUserToPush() {
   try {
     const registration = await registerServiceWorker();
 
-    let subscriptionPayload = { endpoint: 'browser-' + userId, active: true };
+    let subscriptionPayload = null;
 
     if (registration && registration.pushManager) {
       try {
         let subscription = await registration.pushManager.getSubscription();
+
+        if (!subscription) {
+          // Fetch server's VAPID public key
+          const keyRes = await fetch(`${API_BASE}/api/push/vapid-public-key`);
+          const keyData = await keyRes.json();
+
+          if (keyData && keyData.publicKey) {
+            const convertedKey = urlBase64ToUint8Array(keyData.publicKey);
+            subscription = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: convertedKey,
+            });
+          }
+        }
+
         if (subscription) {
           subscriptionPayload = subscription.toJSON();
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Real pushManager subscription notice:', e);
+      }
+    }
+
+    if (!subscriptionPayload) {
+      subscriptionPayload = { endpoint: 'browser-' + userId, active: true };
     }
 
     // Send subscription to backend
@@ -53,7 +85,7 @@ export async function subscribeUserToPush() {
 
     // Trigger confirmation push notification
     showLocalPushNotification('Notifications Enabled! 🔔', {
-      body: 'CampusCart notifications are now active on your device.',
+      body: 'CampusCart mobile & desktop alerts are now active on your device.',
       tag: 'welcome-notification',
     });
 
