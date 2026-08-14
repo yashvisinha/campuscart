@@ -1045,17 +1045,24 @@ app.get("/api/messages/chats/:userId", async (req, res) => {
   const chatMap = {};
 
   for (const msg of data) {
-    let sender = msg.sender_id;
-    let receiver = msg.receiver_id;
+    const sender = String(msg.sender_id);
+    const receiver = String(msg.receiver_id);
+    const targetUserId = String(userId);
 
-    const otherUser = sender === userId ? receiver : sender;
+    const otherUser = sender === targetUserId ? receiver : sender;
     if (!chatMap[otherUser]) {
       chatMap[otherUser] = {
         userId: otherUser,
         lastMessage: msg.content,
         time: msg.created_at,
-        unread: receiver === userId && !msg.read,
+        unread: false,
+        unreadCount: 0,
       };
+    }
+
+    if (receiver === targetUserId && !msg.read) {
+      chatMap[otherUser].unreadCount += 1;
+      chatMap[otherUser].unread = true;
     }
   }
 

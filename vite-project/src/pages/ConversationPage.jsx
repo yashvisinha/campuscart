@@ -33,20 +33,30 @@ export default function ConversationPage() {
       return;
     }
 
-    fetch(`/api/messages/conversation/${currentUser}/${otherUserId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setMessages(data);
-        setLoading(false);
+    const fetchConversation = () => {
+      fetch(`/api/messages/conversation/${currentUser}/${otherUserId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data)) setMessages(data);
+          setLoading(false);
 
-        // Mark this conversation's messages as read
-        fetch(`/api/messages/read/${otherUserId}/${currentUser}`, { method: 'PUT' })
-          .catch(err => console.error('Failed to mark as read:', err));
-      })
-      .catch(err => {
-        console.error('Error fetching conversation:', err);
-        setLoading(false);
-      });
+          // Mark this conversation's messages as read and notify app
+          fetch(`/api/messages/read/${otherUserId}/${currentUser}`, { method: 'PUT' })
+            .then(() => {
+              window.dispatchEvent(new Event('unread-messages-updated'));
+            })
+            .catch((err) => console.error('Failed to mark as read:', err));
+        })
+        .catch((err) => {
+          console.error('Error fetching conversation:', err);
+          setLoading(false);
+        });
+    };
+
+    fetchConversation();
+    const interval = setInterval(fetchConversation, 3000);
+
+    return () => clearInterval(interval);
   }, [currentUser, otherUserId, navigate]);
 
   useEffect(() => {
